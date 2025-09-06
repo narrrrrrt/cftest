@@ -1,22 +1,18 @@
 export class ReversiDO {
   state: DurableObjectState;
 
-  constructor(state: DurableObjectState, env: Env) {
+  constructor(state: DurableObjectState) {
     this.state = state;
   }
 
   async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    const id = url.searchParams.get("id");
-
-    if (!id) {
-      return new Response("Missing id", { status: 400 });
+    const url = new URL(request.url, "http://do"); // ベース必須
+    if (url.pathname === "/do") {
+      const id = url.searchParams.get("id");
+      return new Response(JSON.stringify({ ok: true, id }), {
+        headers: { "content-type": "application/json" },
+      });
     }
-
-    return new Response(`Hello from DO, id=${id}`, {
-      headers: { "Content-Type": "text/plain" },
-    });
+    return new Response("Not found in DO", { status: 404 });
   }
 }
-
-export interface Env {}

@@ -1,6 +1,10 @@
-name = "reversi-do-minimal"
+name = "test"
 main = "src/index.ts"
 compatibility_date = "2025-09-06"
+
+[[durable_objects.bindings]]
+name = "ReversiDO"
+class_name = "ReversiDO"
 
 [[migrations]]
 tag = "v1"
