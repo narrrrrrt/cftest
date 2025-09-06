@@ -1,0 +1,7 @@
+name = "reversi-do-minimal"
+main = "src/index.ts"
+compatibility_date = "2025-09-06"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ReversiDO"]
