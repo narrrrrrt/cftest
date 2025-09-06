@@ -1,16 +1,11 @@
 name = "test"
-main = "index.ts"
-compatibility_date = "2024-09-06"
+main = "src/index.ts"
+compatibility_date = "2025-09-06"
+
+[[durable_objects.bindings]]
+name = "ReversiDO"
+class_name = "ReversiDO"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ReversiDO"]
-
-[durable_objects]
-bindings = [
-  { name = "ReversiDO", class_name = "ReversiDO" }
-]
-
-[assets]
-binding = "ASSETS"
-directory = "./public"
