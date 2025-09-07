@@ -1,23 +1,20 @@
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
-    // まずアセット（./public 配下）を探す
-    const assetResponse = await env.ASSETS.fetch(request);
+    const url = new URL(request.url);
 
-    // もし 404 でなければ、そのまま返す（アセットが存在）
+    // 明示的にパスだけを使って ASSETS に問い合わせる
+    const assetRequest = new Request(url.pathname, request);
+    const assetResponse = await env.ASSETS.fetch(assetRequest);
+
     if (assetResponse.status !== 404) {
       return assetResponse;
     }
 
-    // 404 だったら DO にフォワードする
-    const url = new URL(request.url);
+    // fallback to DO
     const id = env.ReversiDO.idFromName("global");
     const stub = env.ReversiDO.get(id);
-
-    return stub.fetch(
-      new Request(`http://do${url.pathname}${url.search}`, request)
-    );
+    return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
   },
 };
 
-// ReversiDO をエクスポート（必要に応じて）
 export { ReversiDO } from "./ReversiDO";
