@@ -1,22 +1,14 @@
 import { createRoom } from "../schema/types";
 
-// クライアント管理マップ：id → Set of controller
-const clients = new Map<string, Set<ReadableStreamDefaultController>>();
+// 単一接続用 controller（※1人想定）
+let controller: ReadableStreamDefaultController | null = null;
 
+// 他の処理からSSEにデータを送信するための関数
 export function pushToRoom(id: string, data: any) {
-  const controllers = clients.get(id);
-  if (!controllers) return;
-
+  if (!controller) return;
+  const encoder = new TextEncoder();
   const payload = `data: ${JSON.stringify(data)}\n\n`;
-  const encoded = new TextEncoder().encode(payload);
-
-  for (const controller of controllers) {
-    try {
-      controller.enqueue(encoded);
-    } catch (err) {
-      controllers.delete(controller);
-    }
-  }
+  controller.enqueue(encoder.encode(payload));
 }
 
 export async function sse(request: Request): Promise<Response> {
@@ -24,33 +16,17 @@ export async function sse(request: Request): Promise<Response> {
   const params = Object.fromEntries(url.searchParams.entries());
   const id = params.id;
 
-  const encoder = new TextEncoder();
-  const room = createRoom(id);
-  const payload = {
-    id,               // ← クエリーパラメーターそのまま
-    query: params,    // ← 全てのパラメーターを含む
-    status: room.status, // ← スキーマ準拠 ("waiting"など)
-  };
-  const initialData = encoder.encode(`data: ${JSON.stringify(payload)}\n\n`);
-
   const stream = new ReadableStream({
-    start(controller) {
-      // 初期メッセージを送信
-      controller.enqueue(initialData);
-
-      // クライアント登録（複数対応）
-      if (!clients.has(id)) {
-        clients.set(id, new Set());
-      }
-      clients.get(id)!.add(controller);
-    },
-    cancel() {
-      // 切断時に自身を削除（あくまで弱い保証）
-      clients.get(id)?.forEach(ctrl => {
-        if (ctrl === this) {
-          clients.get(id)!.delete(ctrl);
-        }
-      });
+    start(ctrl) {
+      controller = ctrl;  // ← グローバルに保存
+      const encoder = new TextEncoder();
+      const room = createRoom(id);
+      const payload = {
+        id,
+        query: params,
+        status: room.status,
+      };
+      ctrl.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
     }
   });
 
