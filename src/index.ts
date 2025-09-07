@@ -4,7 +4,8 @@ export default {
 
     // 明示的にパスだけを使って ASSETS に問い合わせる
     const assetRequest = new Request(url.pathname, request);
-    const assetResponse = await env.ASSETS.fetch(assetRequest);
+    //const assetResponse = await env.ASSETS.fetch(assetRequest);
+    const assetResponse = await env.ASSETS.fetch(new Request(url.pathname, request));
 
     if (assetResponse.status !== 404) {
       return assetResponse;
