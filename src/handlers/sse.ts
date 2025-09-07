@@ -36,17 +36,6 @@ export async function sse(request: Request): Promise<Response> {
       };
       //writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-
-      // 接続登録
-      if (!clients.has(roomId)) {
-        clients.set(roomId, new Set());
-      }
-      clients.get(roomId)!.add(writer);
-
-      // 切断時に登録解除
-      stream.cancel = () => {
-        clients.get(roomId)?.delete(writer);
-      };
     },
   });
 
