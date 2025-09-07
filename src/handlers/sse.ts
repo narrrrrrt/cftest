@@ -1,51 +1,60 @@
 import { createRoom } from "../schema/types";
 
-// ✅ 複数接続対応（Setで管理）
-const clients = new Map<string, Set<WritableStreamDefaultWriter>>();
+// クライアント管理マップ：id → Set of controller
+const clients = new Map<string, Set<ReadableStreamDefaultController>>();
 
-export function pushToRoom(roomId: string, data: any) {
-  const writers = clients.get(roomId);
-  if (!writers) return;
+export function pushToRoom(id: string, data: any) {
+  const controllers = clients.get(id);
+  if (!controllers) return;
 
   const payload = `data: ${JSON.stringify(data)}\n\n`;
   const encoded = new TextEncoder().encode(payload);
 
-  for (const writer of writers) {
-    writer.write(encoded).catch(() => {
-      // 書き込み失敗時に Set から削除（例：接続切れ）
-      writers.delete(writer);
-    });
+  for (const controller of controllers) {
+    try {
+      controller.enqueue(encoded);
+    } catch (err) {
+      controllers.delete(controller);
+    }
   }
 }
 
 export async function sse(request: Request): Promise<Response> {
   const url = new URL(request.url, "http://do");
   const params = Object.fromEntries(url.searchParams.entries());
-  const roomId = params.id;
+  const id = params.id;
 
-  // ✅ TransformStream を使って Writer を取り出す
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
-
-  // ✅ クライアント Writer を登録（Set に追加）
-  if (!clients.has(roomId)) {
-    clients.set(roomId, new Set());
-  }
-  clients.get(roomId)!.add(writer);
-
-  // 最初のステータスを送信
   const encoder = new TextEncoder();
-  const room = createRoom(roomId);
+  const room = createRoom(id);
   const payload = {
-    roomId,
-    query: params,
-    status: room.status,
+    id,               // ← クエリーパラメーターそのまま
+    query: params,    // ← 全てのパラメーターを含む
+    status: room.status, // ← スキーマ準拠 ("waiting"など)
   };
-  writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+  const initialData = encoder.encode(`data: ${JSON.stringify(payload)}\n\n`);
 
-  // ❌ cancel 処理は明示的に書かない（不安定・自己参照を避ける）
+  const stream = new ReadableStream({
+    start(controller) {
+      // 初期メッセージを送信
+      controller.enqueue(initialData);
 
-  return new Response(readable, {
+      // クライアント登録（複数対応）
+      if (!clients.has(id)) {
+        clients.set(id, new Set());
+      }
+      clients.get(id)!.add(controller);
+    },
+    cancel() {
+      // 切断時に自身を削除（あくまで弱い保証）
+      clients.get(id)?.forEach(ctrl => {
+        if (ctrl === this) {
+          clients.get(id)!.delete(ctrl);
+        }
+      });
+    }
+  });
+
+  return new Response(stream, {
     headers: {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
