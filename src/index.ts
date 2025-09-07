@@ -1,7 +1,23 @@
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
-    return await env.ASSETS.fetch(request);
+    const url = new URL(request.url);
+
+    // まず ASSETS に問い合わせ（HTML, CSS, JS, etc）
+    const assetResponse = await env.ASSETS.fetch(request);
+
+    // アセットが見つかればそれを返す（404 以外）
+    if (assetResponse.status !== 404) {
+      return assetResponse;
+    }
+
+    // アセットが 404 → DO にフォワード（global ID）
+    const id = env.ReversiDO.idFromName("global");
+    const stub = env.ReversiDO.get(id);
+
+    // 元の URL を維持したまま DO にフォワード（パス・クエリ付き）
+    return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
   },
-}
-// 使っていないけど export だけは維持
+};
+
+// DO を export（wrangler.toml に書いてあれば必須）
 export { ReversiDO } from "./ReversiDO";
