@@ -1,25 +1,43 @@
-export async function sse(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
+// handlers/sse.ts
 
-  const stream = new ReadableStream({
-    start(controller) {
-      const encoder = new TextEncoder();
-      const send = () => {
-        const data = JSON.stringify(params);
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-      };
+import { Room, createRoom } from "../schema/types";
 
-      send();
-      const interval = setInterval(send, 1000);
-    },
-  });
+const clients = new Map<string, Set<WritableStreamDefaultWriter>>();
+const rooms = new Map<string, Room>();
 
-  return new Response(stream, {
+export function sse(request: Request): Response {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return new Response("Missing room ID", { status: 400 });
+
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
+  const writers = clients.get(id) ?? new Set();
+  writers.add(writer);
+  clients.set(id, writers);
+
+  if (!rooms.has(id)) {
+    rooms.set(id, createRoom(id));
+  }
+
+  const room = rooms.get(id)!;
+  writer.write(`data: ${JSON.stringify(room)}\n\n`);
+
+  return new Response(stream.readable, {
     headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache",
-      "connection": "keep-alive",
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
     },
   });
+}
+
+export function broadcast(id: string, data: any) {
+  const writers = clients.get(id);
+  if (!writers) return;
+
+  for (const w of writers) {
+    w.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
 }
