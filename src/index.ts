@@ -1,21 +1,15 @@
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
-
-    // 明示的にパスだけを使って ASSETS に問い合わせる
-    const assetRequest = new Request(url.pathname, request);
-    //const assetResponse = await env.ASSETS.fetch(assetRequest);
-    const assetResponse = await env.ASSETS.fetch(new Request(url.pathname, request));
-
-    if (assetResponse.status !== 404) {
-      return assetResponse;
+    if (url.pathname === "/do") {
+      const id = env.ReversiDO.idFromName("global");
+      const stub = env.ReversiDO.get(id);
+      // クエリを維持して DO へフォワード
+      return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
     }
-
-    // fallback to DO
-    const id = env.ReversiDO.idFromName("global");
-    const stub = env.ReversiDO.get(id);
-    return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
+    return new Response("Not found", { status: 404 });
   },
 };
 
+// Durable Object を再エクスポート
 export { ReversiDO } from "./ReversiDO";
