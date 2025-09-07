@@ -1,3 +1,5 @@
+import { createRoom } from "../schema/types";
+
 export async function sse(request: Request): Promise<Response> {
   const url = new URL(request.url, "http://do");
   const params = Object.fromEntries(url.searchParams.entries());
@@ -5,13 +7,19 @@ export async function sse(request: Request): Promise<Response> {
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
-      const send = () => {
-        const data = JSON.stringify(params);
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+
+      // クエリの id をそのまま文字列で渡す
+      const id = params.id;
+      const room = createRoom(id);
+
+      const payload = {
+        roomId: id,
+        query: params,
+        status: room.status,
       };
 
-      send();
-      const interval = setInterval(send, 1000);
+      const data = JSON.stringify(payload);
+      controller.enqueue(encoder.encode(`data: ${data}\n\n`));
     },
   });
 
