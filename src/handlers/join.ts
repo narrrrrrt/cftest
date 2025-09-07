@@ -1,23 +1,19 @@
-import { createRoom } from "../schema/types";
-import { pushAll } from "./sse";
+import type { ActionHandler } from "./core";
+import { createRoom } from "../schema/types"; 
 
-export async function join(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
-
+export const joinAction: ActionHandler = async (params, state) => {
   const roomId = params.id;
-  const room = createRoom(roomId);
+
+  const room = await createRoom(roomId /*, state*/);
 
   const payload = {
+    action: "join",
     roomId,
-    query: params,
     status: room.status,
   };
 
-  // SSE接続中のクライアントに通知を送る
-  pushAll(payload);
-
-  return new Response(JSON.stringify(payload), {
-    headers: { "content-type": "application/json" },
-  });
-}
+  return {
+    broadcast: payload,
+    response: { status: 200, body: payload },
+  };
+};

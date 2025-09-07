@@ -1,10 +1,19 @@
-export async function leave(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
-  const body = JSON.stringify(params);
-  return new Response(body, {
-    headers: {
-      "content-type": "application/json"
-    }
-  });
-}
+import type { ActionHandler } from "./core";
+import { createRoom } from "../schema/types"; // ← 修正済み
+
+export const leaveAction: ActionHandler = async (params, state) => {
+  const roomId = params.id;
+  const room = await createRoom(roomId /*, state*/);
+
+  const payload = {
+    action: "leave",
+    roomId,
+    status: room.status,
+    // seat: params.seat, // 必要なら
+  };
+
+  return {
+    broadcast: payload,
+    response: { status: 200, body: payload },
+  };
+};

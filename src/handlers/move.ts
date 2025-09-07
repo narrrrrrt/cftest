@@ -1,10 +1,19 @@
-export async function move(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
-  const body = JSON.stringify(params);
-  return new Response(body, {
-    headers: {
-      "content-type": "application/json"
-    }
-  });
-}
+import type { ActionHandler } from "./core";
+import { createRoom } from "../schema/types"; // ← 修正済み
+
+export const moveAction: ActionHandler = async (params, state) => {
+  const roomId = params.id;
+  const room = await createRoom(roomId /*, state*/);
+
+  const payload = {
+    action: "move",
+    roomId,
+    status: room.status,
+    // 例: x: Number(params.x), y: Number(params.y), color: params.color
+  };
+
+  return {
+    broadcast: payload,
+    response: { status: 200, body: payload },
+  };
+};
