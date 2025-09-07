@@ -1,12 +1,15 @@
 import type { ActionHandler } from "./core";
+import { createRoom } from "../schema/types"; // ← 修正済み
 
 export const resetAction: ActionHandler = async (params, state) => {
   const roomId = params.id;
+  const room = await createRoom(roomId /*, state*/);
 
   const payload = {
     action: "reset",
     roomId,
-    // 必要なら初期盤面データなどを追加
+    status: room.status,
+    // 必要なら初期盤面データを追加
   };
 
   return {

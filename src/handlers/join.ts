@@ -1,5 +1,5 @@
 import type { ActionHandler } from "./core";
-import { createRoom } from "../schema";  // 既存 join.ts と同じ import 元に合わせる
+import { createRoom } from "../schema/types"; 
 
 export const joinAction: ActionHandler = async (params, state) => {
   const roomId = params.id;
