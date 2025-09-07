@@ -18,14 +18,11 @@ export class ReversiDO {
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           };
 
-          send(); // 最初に即送信
-          const interval = setInterval(send, 1000); // 1秒ごとに送信
+          send();
+          const interval = setInterval(send, 1000);
 
-          // 切断処理
-          controller.signal.addEventListener("abort", () => {
-            clearInterval(interval);
-            controller.close();
-          });
+          // ❌ 不要だった abort 処理 → 削除
+          // ✅ 接続が切れたら Cloudflare が自動で stream を閉じる
         },
       });
 
