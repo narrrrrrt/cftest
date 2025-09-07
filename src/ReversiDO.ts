@@ -1,8 +1,4 @@
-import { sse } from "./handlers/sse";
-import { join } from "./handlers/join";
-// import { move } from "./handlers/move";
-// import { leave } from "./handlers/leave";
-// import { reset } from "./handlers/reset";
+import { handleAction } from "./handlers/core"; 
 
 const handlers: Record<string, Function> = { sse, join };
 
@@ -17,10 +13,12 @@ export class ReversiDO {
     const url = new URL(request.url, "http://do");
     const path = url.pathname.slice(1); // "/sse" → "sse"
 
-    if (path in handlers) {
-      return handlers[path](request);
+    if (path === "sse") {
+      // SSE の場合は既存処理をそのまま呼ぶ
+      return sse(request);
     }
 
-    return new Response("Not found in DO", { status: 404 });
+    // ★ここも join → core に差し替え
+    return handleAction(request, this.state);
   }
 }

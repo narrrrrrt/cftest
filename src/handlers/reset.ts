@@ -1,10 +1,16 @@
-export async function reset(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
-  const body = JSON.stringify(params);
-  return new Response(body, {
-    headers: {
-      "content-type": "application/json"
-    }
-  });
-}
+import type { ActionHandler } from "./core";
+
+export const resetAction: ActionHandler = async (params, state) => {
+  const roomId = params.id;
+
+  const payload = {
+    action: "reset",
+    roomId,
+    // 必要なら初期盤面データなどを追加
+  };
+
+  return {
+    broadcast: payload,
+    response: { status: 200, body: payload },
+  };
+};
