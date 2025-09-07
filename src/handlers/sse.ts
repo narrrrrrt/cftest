@@ -25,7 +25,7 @@ export async function sse(request: Request): Promise<Response> {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      const writer = controller.getWriter();
+      //const writer = controller.getWriter();
 
       // 初回送信：status=waiting
       const room = createRoom(roomId);
@@ -34,7 +34,8 @@ export async function sse(request: Request): Promise<Response> {
         query: params,
         status: room.status,
       };
-      writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      //writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 
       // 接続登録
       if (!clients.has(roomId)) {
