@@ -1,6 +1,6 @@
 // ※ ここは封印前提。将来は基本いじらない。
 // 追加アクションは "SUPPORTED_PATHS" と import の行を増やすだけ。
-
+import { pushAll } from "./sse";
 import { joinAction }  from "./join";
 import { moveAction }  from "./move";   // ← stub 前提（未実装なら 501）
 import { leaveAction } from "./leave";  // ← stub 前提（未実装なら 501）
