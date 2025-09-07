@@ -1,3 +1,10 @@
-export async function resetHandler(request: Request): Promise<Response> {
-  return new Response("reset not implemented", { status: 501 });
+export async function reset(request: Request): Promise<Response> {
+  const url = new URL(request.url, "http://do");
+  const params = Object.fromEntries(url.searchParams.entries());
+  const body = JSON.stringify(params);
+  return new Response(body, {
+    headers: {
+      "content-type": "application/json"
+    }
+  });
 }
