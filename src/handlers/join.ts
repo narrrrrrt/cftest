@@ -1,5 +1,6 @@
 import type { ActionHandler } from "./core";
 import { createRoom } from "../schema/types"; 
+import { pushAll } from "./sse";
 
 export const joinAction: ActionHandler = async (params, state) => {
   const roomId = params.id;
