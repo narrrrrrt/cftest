@@ -1,17 +1,21 @@
 import { createRoom } from "../schema/types";
 
-const clients = new Map<string, WritableStreamDefaultWriter>();
+// ✅ 複数接続対応（Setで管理）
+const clients = new Map<string, Set<WritableStreamDefaultWriter>>();
 
 export function pushToRoom(roomId: string, data: any) {
-  const writer = clients.get(roomId);
-  if (!writer) return;
+  const writers = clients.get(roomId);
+  if (!writers) return;
 
   const payload = `data: ${JSON.stringify(data)}\n\n`;
   const encoded = new TextEncoder().encode(payload);
 
-  writer.write(encoded).catch(() => {
-    clients.delete(roomId); // 切断済みなど
-  });
+  for (const writer of writers) {
+    writer.write(encoded).catch(() => {
+      // 書き込み失敗時に Set から削除（例：接続切れ）
+      writers.delete(writer);
+    });
+  }
 }
 
 export async function sse(request: Request): Promise<Response> {
@@ -19,11 +23,17 @@ export async function sse(request: Request): Promise<Response> {
   const params = Object.fromEntries(url.searchParams.entries());
   const roomId = params.id;
 
+  // ✅ TransformStream を使って Writer を取り出す
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
-  clients.set(roomId, writer); // ✅ クライアント登録
+  // ✅ クライアント Writer を登録（Set に追加）
+  if (!clients.has(roomId)) {
+    clients.set(roomId, new Set());
+  }
+  clients.get(roomId)!.add(writer);
 
+  // 最初のステータスを送信
   const encoder = new TextEncoder();
   const room = createRoom(roomId);
   const payload = {
@@ -31,8 +41,9 @@ export async function sse(request: Request): Promise<Response> {
     query: params,
     status: room.status,
   };
+  writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 
-  writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)); // ✅ await 不要
+  // ❌ cancel 処理は明示的に書かない（不安定・自己参照を避ける）
 
   return new Response(readable, {
     headers: {
