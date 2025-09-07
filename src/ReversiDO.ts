@@ -1,4 +1,5 @@
-import { handleAction } from "./handlers/core"; 
+import { handleAction } from "./handlers/core";
+import { sse } from "./handlers/sse";
 
 const handlers: Record<string, Function> = { sse, join };
 
