@@ -1,5 +1,5 @@
 import { createRoom } from "../schema/types";
-import { pushAll } from "./sse";
+import { pushToRoom } from "./sse";
 
 export async function join(request: Request): Promise<Response> {
   const url = new URL(request.url, "http://do");
@@ -15,7 +15,7 @@ export async function join(request: Request): Promise<Response> {
   };
 
   // SSE接続中のクライアントに通知を送る
-  pushAll(payload);
+  pushToRoom(roomId, payload);
 
   return new Response(JSON.stringify(payload), {
     headers: { "content-type": "application/json" },
