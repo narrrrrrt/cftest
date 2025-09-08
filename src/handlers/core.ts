@@ -25,3 +25,9 @@ export async function handleAction(request: Request, ctx: HandlerCtx): Promise<R
     return json({ error: "unsupported endpoint" }, 500);
   }
 }
+function json(obj: unknown, status = 200): Response {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
