@@ -9,7 +9,7 @@ export interface Room {
   black: string | null    // 黒の使用者ID/null=空席
   white: string | null    // 白の使用者ID/null=空席
   observers: string[]     // 観戦者ID
-  board: string[]         // 8行盤面（"."|"B"|"W"）
+  board: string[]         // 8行盤面（"-"|"B"|"W"|"*"）
   step: number            // 状態更新ごとに+1
 }
 
