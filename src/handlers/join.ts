@@ -11,6 +11,11 @@ export const joinAction: ActionHandler = async (params, ctx) => {
   let role: Seat = seat
   let changed = false
 
+console.log(
+  `JOIN start: id=${room.id} seat=${seat} ` +
+  `before b=${+!!room.black} w=${+!!room.white} step=${room.step} status=${room.status}`
+)
+
   if (seat === "black") {
     if (room.black) role = "observer"
     else { room.black = genToken(); changed = true }          // 占有印（内部IDでOK）
@@ -41,7 +46,12 @@ export const joinAction: ActionHandler = async (params, ctx) => {
     token: genToken(),
     step: room.step,
   }
-(resp as any)._ = `${room.id},${seat},b=${+!!room.black},w=${+!!room.white},s=${room.step}`;
+
+console.log(
+  `JOIN end:   id=${room.id} role=${role} ` +
+  `after  b=${+!!room.black} w=${+!!room.white} step=${room.step} status=${room.status}`
+)
+
   return {
     broadcast: snapshot,
     response: { status: 200, body: resp },
