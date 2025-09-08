@@ -1,4 +1,4 @@
-// join.ts ---- ctx.room 前提・最小I/O仕様
+// join.ts ---- ctx.room 前提・最小I/O仕様 
 import type { ActionHandler } from "./core"
 import type { Room, Seat, GameStatus, SseSnapshot, JoinResponse } from "../schema/types"
 
