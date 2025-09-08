@@ -4,6 +4,7 @@ import { joinAction }  from "./join";
 import { moveAction }  from "./move";
 import { leaveAction } from "./leave";
 import { resetAction } from "./reset";
+import { pushAll } from "./sse";
 import type { Room } from "../schema/types";
 
 export const SUPPORTED_PATHS = ["join", "move", "leave", "reset"] as const;
@@ -55,6 +56,11 @@ export async function handleAction(
   const result  = await handler(params, ctx);
   const status  = result?.response?.status ?? 200;
   const body    = result?.response?.body ?? { ok: true };
+
+  if (result?.broadcast !== undefined) {
+    pushAll(result.broadcast);
+  }
+
 
   // 必要ならここで ctx.room を見てブロードキャストの加工も可能
   return new Response(JSON.stringify(body), {
