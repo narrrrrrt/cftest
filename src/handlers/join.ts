@@ -11,11 +11,6 @@ export const joinAction: ActionHandler = async (params, ctx) => {
   let role: Seat = seat
   let changed = false
 
-console.log(
-  `JOIN start: id=${room.id} seat=${seat} ` +
-  `before b=${+!!room.black} w=${+!!room.white} step=${room.step} status=${room.status}`
-)
-
   if (seat === "black") {
     if (room.black) role = "observer"
     else { room.black = genToken(); changed = true }          // 占有印（内部IDでOK）
@@ -33,6 +28,8 @@ console.log(
 
   if (changed) room.step += 1                                  // 変化があれば step+1
 
+  await ctx.save(room);
+  
   const snapshot: SseSnapshot = {                              // 全員に同じSSE
     step: room.step,
     black: !!room.black,
@@ -46,11 +43,6 @@ console.log(
     token: genToken(),
     step: room.step,
   }
-
-console.log(
-  `JOIN end:   id=${room.id} role=${role} ` +
-  `after  b=${+!!room.black} w=${+!!room.white} step=${room.step} status=${room.status}`
-)
 
   return {
     broadcast: snapshot,
