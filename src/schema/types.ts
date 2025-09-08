@@ -9,7 +9,7 @@ export interface Room {
   black: string | null    // 黒の使用者ID/null=空席
   white: string | null    // 白の使用者ID/null=空席
   observers: string[]     // 観戦者ID
-  board: string[]         // 8行盤面（"."|"B"|"W"）
+  board: string[]         // 8行盤面（"-"|"B"|"W"|"*"）
   step: number            // 状態更新ごとに+1
 }
 
@@ -70,4 +70,14 @@ export function createRoom(id: string): Room {
     board: [...initialBoard],
     step: 0,
   }
+}
+
+export async function resetRoomState(
+  state: DurableObjectState,
+  roomId: string
+): Promise<Room> {
+  await state.storage.deleteAll();              // 他のキーも含めて全クリアでOK（部屋=DO前提）
+  const room = createRoom(roomId);
+  await state.storage.put("room", room);
+  return room;
 }
