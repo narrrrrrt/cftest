@@ -1,47 +1,58 @@
-// 全ルーム一括ブロードキャスト専用実装（正常系のみ）
-// ルームID単位で接続を保持するが、送信は常に「全接続」へ。
+// src/handlers/sse.ts
+import type { HandlerCtx } from "./core";
 
 type Ctrl = ReadableStreamDefaultController;
-const roomControllers = new Map<string, Set<Ctrl>>();
 const encoder = new TextEncoder();
 
-function bucketFor(id: string): Set<Ctrl> {
-  let set = roomControllers.get(id);
+// この DO（＝この room）内で使う接続バケツ（モジュール内に閉じる）
+const buckets = new Map<string, Set<Ctrl>>();
+
+function bucketFor(roomId: string): Set<Ctrl> {
+  const key = String(roomId ?? "");
+  let set = buckets.get(key);
   if (!set) {
     set = new Set<Ctrl>();
-    roomControllers.set(id, set);
+    buckets.set(key, set);
   }
   return set;
 }
 
-// ---- 外部からSSEにデータを送るAPI ----
-// パラメータ無し。接続中の**全て**へ送る。
-export function pushAll(data: any) {
-  const bytes = encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
-  for (const set of roomControllers.values()) {
+/**
+ * この DO 内の全接続へブロードキャスト（自分も含む）。
+ * 実装はこのモジュールに閉じる。core などから呼べるよう export。
+ */
+export function pushAll(data: unknown, _state?: DurableObjectState): void {
+  const chunk = encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+  for (const set of buckets.values()) {
     for (const ctrl of set) {
-      ctrl.enqueue(bytes);
+      try {
+        ctrl.enqueue(chunk);
+      } catch {
+        // 壊れた接続は無視（必要なら除去ロジックを追加）
+      }
     }
   }
 }
 
-// ---- SSEエンドポイント ----
-// 呼び出し形は元ファイルと同様：new ReadableStream({ start(ctrl) { ... } })
-export async function sse(request: Request): Promise<Response> {
-  const url = new URL(request.url, "http://do");
-  const params = Object.fromEntries(url.searchParams.entries());
-  const roomId = (params["id"] || params["room"] || "lobby") as string;
+/**
+ * SSE エンドポイント
+ * - start だけ（cancel なし）
+ * - start では enqueue しない
+ * - 接続登録後、初回通知は pushAll({ type: "init", entryParams }) で送る
+ */
+export async function sse(request: Request, ctx: HandlerCtx): Promise<Response> {
+  const url = new URL(request.url, "http://do"); // 相対URL対策
+  const entryParams = Object.fromEntries(url.searchParams.entries());
+  const roomId = String(ctx.room.id);
 
   const stream = new ReadableStream({
-    start(ctrl) {
-      // 接続登録（ルーム毎に保持するが、送信は pushAll で全体へ）
-      bucketFor(roomId).add(ctrl);
+    start(controller) {
+      // 1) この room のバケツに登録
+      const set = bucketFor(roomId);
+      set.add(controller);
 
-      // 初期通知も pushAll を使う（＝自分自身＋全接続へ）
-      pushAll({
-        type: "init",
-        query: params,
-      });
+      // 2) 初回通知（自分も含め pushAll 経由で配信）
+      pushAll({ type: "init", entryParams });
     },
   });
 

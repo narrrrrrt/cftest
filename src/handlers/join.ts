@@ -1,15 +1,10 @@
 import type { ActionHandler } from "./core";
-import { createRoom } from "../schema/types"; 
 
-
-export const joinAction: ActionHandler = async (params, state) => {
-  const roomId = params.id;
-
-  const room = await createRoom(roomId /*, state*/);
+export const joinAction: ActionHandler = async (_params, ctx) => {
+  const room = ctx.room;
 
   const payload = {
     action: "join",
-    roomId,
     status: room.status,
   };
 

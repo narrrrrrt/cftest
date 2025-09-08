@@ -1,19 +1,16 @@
+// src/handlers/move.ts
 import type { ActionHandler } from "./core";
-import { createRoom } from "../schema/types";
 
-export const moveAction: ActionHandler = async (params, state) => {
-  const roomId = params.id;
-  const room = await createRoom(roomId /*, state*/);
+export const moveAction: ActionHandler = async (params, ctx) => {
+  const room = ctx.room;
 
   const payload = {
     action: "move",
-    roomId,
     status: room.status,
-    // 例: x: Number(params.x), y: Number(params.y), color: params.color
   };
 
   return {
-    broadcast: payload,
+    broadcast: payload, // 同一 DO = 同一 room だけに配られる（SSE 側が分離）
     response: { status: 200, body: payload },
   };
 };
