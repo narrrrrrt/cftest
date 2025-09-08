@@ -71,3 +71,13 @@ export function createRoom(id: string): Room {
     step: 0,
   }
 }
+
+export async function resetRoomState(
+  state: DurableObjectState,
+  roomId: string
+): Promise<Room> {
+  await state.storage.deleteAll();              // 他のキーも含めて全クリアでOK（部屋=DO前提）
+  const room = createRoom(roomId);
+  await state.storage.put("room", room);
+  return room;
+}
