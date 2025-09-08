@@ -35,7 +35,7 @@ export const joinAction: ActionHandler = async (params, ctx) => {
     black: !!room.black,
     white: !!room.white,
     status: room.status as GameStatus,
-    board: room.board,
+    board: room.board(),
   }
 
   const resp: JoinResponse = {                                 // JOIN時のみ role/token/step

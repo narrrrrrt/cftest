@@ -1,4 +1,5 @@
 // src/ReversiDO.ts
+import { Room, RoomPlain, reviveRoom, toPlain } from "../schema/types"; // ←パスは環境に合わせて
 import type { Env } from "./schema/types";
 import { createRoom, type Room } from "./schema/types";
 import { sse } from "./handlers/sse";
@@ -24,14 +25,19 @@ export class ReversiDO {
     return true; // 本プロジェクトではすべて room 単位。不要なら細分化してOK
   }
 
-  /** この DO（= この room）の Room オブジェクトを確保して返す */
   private async ensureRoom(roomId: string): Promise<Room> {
-    // DO は roomId ごとに寄せられる想定なので、キーは固定でOK
-    let room = await this.state.storage.get<Room>("room");
-    if (!room) {
-      room = createRoom(roomId);
-      await this.state.storage.put("room", room);
+    // 保存されているプレーンデータを取得
+    const raw = await this.state.storage.get<RoomPlain>("room");
+
+    if (!raw) {
+      // 初回：新品を作って"プレーン"で保存
+      const room = new Room(roomId);
+      await this.state.storage.put("room", toPlain(room));
+      return room; // ← クラスインスタンス（board() が使える）
     }
+
+    // 既存あり：プレーン → クラスに復元（board()/setBoard() 復活）
+    const room = reviveRoom(raw, roomId);
     return room;
   }
 
@@ -63,7 +69,7 @@ export class ReversiDO {
     const ctx: HandlerCtx = {
       state: this.state,
       room,
-      save: (r: Room) => this.saveRoom(r),
+      save: async (r) => { await this.state.storage.put("room", toPlain(r)); }
     };
 
     // 3) SSE は sse ハンドラへ。その他は core へ丸投げ（エンドポイント判定も core）
