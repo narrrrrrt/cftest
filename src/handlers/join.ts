@@ -40,6 +40,7 @@ export const joinAction: ActionHandler = async (params, ctx) => {
     role,
     token: genToken(),
     step: room.step,
+    (resp as any)._ = `${room.id},${seat},b=${+!!room.black},w=${+!!room.white},s=${room.step}`
   }
 
   return {
