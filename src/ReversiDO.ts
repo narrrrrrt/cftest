@@ -1,5 +1,5 @@
 // src/ReversiDO.ts
-import { Room, RoomPlain, reviveRoom, toPlain } from "../schema/types"; // ←パスは環境に合わせて
+import { Room, RoomPlain, reviveRoom, toPlain } from "./schema/types"; // ←パスは環境に合わせて
 import type { Env } from "./schema/types";
 import { createRoom, type Room } from "./schema/types";
 import { sse } from "./handlers/sse";
