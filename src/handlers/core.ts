@@ -1,7 +1,6 @@
 // src/handlers/core.ts（コアの要点だけ）
 import { pushAll } from "./sse";
 import type { Room } from "../schema/types";
-import { readParams } from "../utility/params";
 
 export type HandlerCtx = { state: DurableObjectState; room: Room; save: (r: Room)=>Promise<void>; };
 export type ActionResult = { response?: { status?: number; body?: unknown }, broadcast?: unknown };
@@ -30,8 +29,7 @@ export async function handleAction(request: Request, ctx: HandlerCtx): Promise<R
   const fn = (mod[`${name}Action`] ?? mod.default) as ActionHandler | undefined;
   if (!fn) return json({ error:"handler symbol not exported", expect:`${name}Action` }, 500);
 
-  //const params = Object.fromEntries(url.searchParams.entries());
-  const params = await readParams(request);
+  const params = Object.fromEntries(url.searchParams.entries());
   const result = await fn(params, ctx);
 
   if (result?.broadcast !== undefined) pushAll(result.broadcast);
