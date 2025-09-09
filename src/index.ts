@@ -2,28 +2,26 @@ export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
 
+    // DO へ直行（global 固定）
     const id   = env.ReversiDO.idFromName("global");
     const stub = env.ReversiDO.get(id);
 
     try {
-      // GET/HEAD は body を持たない
-      let body: BodyInit | undefined = undefined;
-      if (!(request.method === "GET" || request.method === "HEAD")) {
-        const buf = await request.arrayBuffer();
-        // ArrayBuffer → Uint8Array → 新しい ReadableStream にする
-        body = new Uint8Array(buf);
-      }
+      // GET/HEAD 以外はボディを一度だけ完全取得（再利用可能なデータ化）
+      const bodyInit =
+        request.method === "GET" || request.method === "HEAD"
+          ? undefined
+          : await request.arrayBuffer(); // ← text() でも OK。ポイントは "再送可能なデータ"
 
-      const doReq = new Request(
+      // ★ ここが肝：Request を作らず、init で直接渡す
+      return await stub.fetch(
         `http://do${url.pathname}${url.search}`,
         {
           method: request.method,
           headers: request.headers,
-          body
+          body: bodyInit
         }
       );
-
-      return await stub.fetch(doReq);
     } catch (e: any) {
       return new Response(
         JSON.stringify({ error: "index catch", message: String(e?.message ?? e) }),
