@@ -2,25 +2,25 @@ export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
 
-    // DO へ直行（global 固定）
+    // DO
     const id   = env.ReversiDO.idFromName("global");
     const stub = env.ReversiDO.get(id);
 
     try {
-      // GET/HEAD 以外はボディを一度だけ完全取得（再利用可能なデータ化）
-      const bodyInit =
-        request.method === "GET" || request.method === "HEAD"
-          ? undefined
-          : await request.arrayBuffer(); // ← text() でも OK。ポイントは "再送可能なデータ"
+      // 1) ヘッダを新規コピー（オリジナルと切り離す）
+      const headers = new Headers();
+      request.headers.forEach((v, k) => headers.set(k, v));
 
-      // ★ ここが肝：Request を作らず、init で直接渡す
+      // 2) ボディは再送可能なデータに（まずは text() で）
+      let body: BodyInit | undefined;
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        body = await request.text(); // ← ArrayBuffer でも可。まずは text で切り分け
+      }
+
+      // 3) Request を new しない。init で直接渡す
       return await stub.fetch(
         `http://do${url.pathname}${url.search}`,
-        {
-          method: request.method,
-          headers: request.headers,
-          body: bodyInit
-        }
+        { method: request.method, headers, body }
       );
     } catch (e: any) {
       return new Response(
