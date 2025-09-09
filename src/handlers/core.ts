@@ -31,8 +31,8 @@ export async function handleAction(request: Request, ctx: HandlerCtx): Promise<R
   if (!fn) return json({ error:"handler symbol not exported", expect:`${name}Action` }, 500);
 
   //const params = Object.fromEntries(url.searchParams.entries());
-  const result = await fn(params, ctx);
   const params = await readParams(request);
+  const result = await fn(params, ctx);
 
   if (result?.broadcast !== undefined) pushAll(result.broadcast);
 
