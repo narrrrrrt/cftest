@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>Reversi – Room</title>
+  <title>Reversi – Room (POST版)</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
     .row { margin: 8px 0; }
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h1>Reversi – Room</h1>
+  <h1>Reversi – Room (POST版)</h1>
 
   <div class="row">
     room id: <code id="ui-id">-</code>
@@ -26,12 +26,12 @@
   </div>
 
   <div class="row">
-    <button id="btn-join" class="btn">Join</button>
-    <span>→ <code id="url-join"></code></span>
+    <button id="btn-join" class="btn">Join (POST)</button>
+    <span>→ <code id="url-join">/join (POST)</code></span>
   </div>
   <div class="row">
-    <button id="btn-leave" class="btn">Leave</button>
-    <span>→ <code id="url-leave"></code></span>
+    <button id="btn-leave" class="btn">Leave (POST)</button>
+    <span>→ <code id="url-leave">/leave (POST)</code></span>
   </div>
   <div class="row">
     <a href="/index.html" class="btn">Back to index</a>
@@ -46,14 +46,13 @@
     document.getElementById("ui-id").textContent   = id || "-";
     document.getElementById("ui-seat").textContent = seat;
 
-    // GET で叩く URL を生成
-    const joinUrl  = `/join?id=${encodeURIComponent(id)}&seat=${encodeURIComponent(seat)}`;
-    const leaveUrl = (token) => `/leave?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
-
-    // Join ボタン
-    document.getElementById("url-join").textContent = joinUrl;
+    // Join ボタン (POST)
     document.getElementById("btn-join").addEventListener("click", async () => {
-      const res  = await fetch(joinUrl, { method: "GET" });
+      const res = await fetch("/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, seat })
+      });
       const text = await res.text();
       let json = null;
       try { json = JSON.parse(text); } catch {}
@@ -61,21 +60,23 @@
         alert(`join 失敗: HTTP ${res.status}\n${text}`);
         return;
       }
-      document.getElementById("ui-role").textContent  = json?.role  ?? "-";
-      document.getElementById("ui-step").textContent  = json?.step  ?? "-";
-      document.getElementById("ui-token").textContent = json?.token ?? "-";
-      document.getElementById("url-leave").textContent = leaveUrl(json?.token ?? "");
+      document.getElementById("ui-role").textContent   = json?.role  ?? "-";
+      document.getElementById("ui-step").textContent   = json?.step  ?? "-";
+      document.getElementById("ui-token").textContent  = json?.token ?? "-";
     });
 
-    // Leave ボタン
+    // Leave ボタン (POST)
     document.getElementById("btn-leave").addEventListener("click", async () => {
       const token = document.getElementById("ui-token").textContent.trim();
       if (!token || token === "-") {
         alert("token がありません（先に join してください）");
         return;
       }
-      const url = leaveUrl(token);
-      const res  = await fetch(url, { method: "GET" });
+      const res = await fetch("/leave", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, token })
+      });
       const text = await res.text();
       if (!res.ok) {
         alert(`leave 失敗: HTTP ${res.status}\n${text}`);
