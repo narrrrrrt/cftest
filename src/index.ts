@@ -1,5 +1,7 @@
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
+    const url = new URL(request.url);
+
     // 1) アセットには clone を渡す（元の request は未消費のまま残す）
     const assetRes = await env.ASSETS.fetch(request.clone());
     if (assetRes.status !== 404) return assetRes;
