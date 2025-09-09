@@ -37,4 +37,3 @@ export const leaveAction: ActionHandler = async (params, ctx) => {
 };
 
 export default leaveAction;
-}
