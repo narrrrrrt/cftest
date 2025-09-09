@@ -92,6 +92,6 @@ export class ReversiDO {
     if (path.startsWith("/sse")) {
       return sse(request, ctx);
     }
-    return handleAction(request, ctx);
+    return handleAction(request, params, ctx);
   }
 }
