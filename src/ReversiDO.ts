@@ -4,6 +4,7 @@ import type { Env } from "./schema/types";
 import { createRoom, type Room } from "./schema/types";
 import { sse } from "./handlers/sse";
 import { handleAction, type HandlerCtx } from "./handlers/core";
+import { extractRoomId } from "../utility/room";
 
 export class ReversiDO {
   private state: DurableObjectState;
@@ -15,10 +16,14 @@ export class ReversiDO {
   }
 
   /** URL から roomId を取得（相対URL対策あり） */
-  private getRoomId(req: Request): string | null {
-    const u = new URL(req.url, "http://do");
-    return u.searchParams.get("id") ?? u.searchParams.get("roomId");
+  //private getRoomId(req: Request): string | null {
+  //  const u = new URL(req.url, "http://do");
+  //  return u.searchParams.get("id") ?? u.searchParams.get("roomId");
+  //}
+  private async getRoomId(req: Request): Promise<string | null> {
+    return await extractRoomId(req);
   }
+
 
   /** このリクエストは部屋IDが必要（SSE/各アクション） */
   private needsRoomId(): boolean {
