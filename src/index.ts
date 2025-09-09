@@ -7,11 +7,8 @@ export default {
     if (assetRes.status !== 404) return assetRes;
 
     // 2) DO にフォワード（バインディング名はどちらでも拾う）
-    const id    = DO_NS.idFromName("global");
-    const stub  = DO_NS.get(id);
-
-    // ★ "disturbed" を避けるコツ：init を素のオブジェクトに展開する
-    //    new Request(url, request) とせず、method/headers/body を明示
+    const id = env.ReversiDO.idFromName("global");
+    const stub = env.ReversiDO.get(id);
     const doReq = new Request(
       `http://do${url.pathname}${url.search}`,
       {
