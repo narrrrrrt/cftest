@@ -1,29 +1,31 @@
 import type { ActionHandler } from "./core";
-import { leaveMethod } from "../usecases/leaveMethod";
+import { leaveMethod } from "./leaveMethod";
 
 export const leaveAction: ActionHandler = async (params, ctx) => {
-  const token = params?.body?.token as string | undefined;
+  const token = params?.token != null ? String(params.token) : "";
 
-  // トークン無し：何もしない＆ブロードキャストしない
   if (!token) {
-    return { response: { status: 200, body: { ok: true } } };
+    return {
+      response: { status: 400, body: { error: "missing token" } }
+    };
   }
 
+  // トークンに対応する参加者を退室させ、部屋状態を更新
   await leaveMethod(ctx, token);
 
   return {
     broadcast: {
-      type:   "leave",
+      type: "state",
       status: ctx.room.status,
-      step:   ctx.room.step,
-      black:  !!ctx.room.black,
-      white:  !!ctx.room.white,
-      board:  ctx.room.board(),
+      step: ctx.room.step,
+      black: !!ctx.room.black,
+      white: !!ctx.room.white,
+      board: ctx.room.board(),
     },
     response: {
       status: 200,
-      body: { ok: true },
-    },
+      body: { ok: true, step: ctx.room.step }
+    }
   };
 };
 
