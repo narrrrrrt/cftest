@@ -15,7 +15,7 @@ export const leaveAction: ActionHandler = async (params, ctx) => {
 
   return {
     broadcast: {
-      type: "state",
+      type: "leave",
       status: ctx.room.status,
       step: ctx.room.step,
       black: !!ctx.room.black,
