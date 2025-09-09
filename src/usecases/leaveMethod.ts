@@ -1,7 +1,7 @@
 import type { HandlerCtx } from "../handlers/core";
 import type { Room } from "../schema/types";
 
-export const leaveAction: ActionHandler = async (params, ctx) => {
+export const leaveMethod: ActionHandler = async (params, ctx) => {
   const token = params?.token != null ? String(params.token) : "";
 
   const changed = ctx.room.leaveByToken(token);
