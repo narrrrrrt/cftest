@@ -2,99 +2,95 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>Reversi Room Test</title>
+  <title>Reversi – Room</title>
   <style>
-    body { font-family: system-ui, sans-serif; line-height: 1.6; }
+    body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
     .row { margin: 8px 0; }
-    a.button { display:inline-block; padding:6px 10px; border:1px solid #ccc; border-radius:6px; text-decoration:none; }
+    .btn { display:inline-block; padding:6px 10px; border:1px solid #ccc; border-radius:6px; text-decoration:none; cursor:pointer; }
+    .btn:hover { background:#f7f7f7; }
     code { background:#f6f8fa; padding:2px 6px; border-radius:4px; }
   </style>
 </head>
 <body>
-  <h1>Room Test</h1>
+  <h1>Reversi – Room</h1>
 
   <div class="row">
-    <label>id: <input id="room-id" value="1" size="6"></label>
+    room id: <code id="ui-id">-</code>
+    / seat: <code id="ui-seat">-</code>
   </div>
 
   <div class="row">
-    <!-- join: seat はリンクの data-seat から、id は入力欄から -->
-    <a href="#" class="button" data-action="join" data-seat="black">Join (black)</a>
-    <a href="#" class="button" data-action="join" data-seat="white">Join (white)</a>
-    <a href="#" class="button" data-action="join" data-seat="observer">Join (observer)</a>
+    role: <code id="ui-role">-</code> /
+    step: <code id="ui-step">-</code> /
+    token: <code id="ui-token">-</code>
   </div>
 
   <div class="row">
-    <!-- leave: token は下の表示から拾う、id は入力欄から -->
-    <a href="#" class="button" data-action="leave">Leave</a>
-    <a href="#" class="button" data-action="reset">Reset</a>
-  </div>
-
-  <hr />
-
-  <div class="row">
-    <strong>Last Response</strong><br/>
-    role: <code id="role">-</code> /
-    step: <code id="step">-</code> /
-    token: <code id="token">-</code>
+    <button id="btn-leave" class="btn">Leave</button>
+    <a href="/index.html" class="btn">Back to index</a>
   </div>
 
   <script>
-    // 共通の POST(form-urlencoded)
-    async function postForm(path, payload) {
-      const body = new URLSearchParams(payload);
+    // 共通: x-www-form-urlencoded で POST
+    async function postForm(path, kv) {
+      const body = new URLSearchParams(kv);
       const res  = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body
+        body: body.toString(),
       });
-      // join は JSON、leave/reset は OKだけなど、状況に応じて try
       let json = null;
       try { json = await res.json(); } catch (_) {}
       return { ok: res.ok, status: res.status, json };
     }
 
-    // クリックを1か所で拾う（イベント委任）
-    document.addEventListener("click", async (e) => {
-      const a = e.target.closest("a.button");
-      if (!a) return;
-      e.preventDefault();
+    // クエリ取得
+    const qp   = new URLSearchParams(location.search);
+    const id   = qp.get("id")   ?? "";
+    const seat = qp.get("seat") ?? "observer"; // 念のため既定 observer
 
-      const idInput = document.getElementById("room-id");
-      const id = (idInput.value || "").trim();
-      if (!id) { alert("id を入力してください"); return; }
+    // 画面にクエリ表示
+    document.getElementById("ui-id").textContent   = id || "-";
+    document.getElementById("ui-seat").textContent = seat;
 
-      const action = a.dataset.action;
-
-      if (action === "join") {
-        const seat = a.dataset.seat || "observer";
-        const { ok, json } = await postForm("/join", { id, seat });
-        if (!ok) { alert("join NG"); return; }
-
-        // 期待するレスポンス: { token, role, step }
-        if (json) {
-          document.getElementById("token").textContent = json.token ?? "-";
-          document.getElementById("role").textContent  = json.role ?? "-";
-          document.getElementById("step").textContent  = json.step ?? "-";
-        }
+    // 初回 join（id/seat を POST）
+    (async () => {
+      if (!id) {
+        alert("id が指定されていません。index から入り直してください。");
+        return;
       }
-
-      if (action === "leave") {
-        const token = document.getElementById("token").textContent.trim();
-        if (!token || token === "-") { alert("token がありません（先に join してください）"); return; }
-        await postForm("/leave", { id, token });
-        // サーバは OK を返すだけの想定。表示は据え置きか、必要なら消す：
-        // document.getElementById("role").textContent = "-";
-        // document.getElementById("token").textContent = "-";
+      const { ok, json, status } = await postForm("/join", { id, seat });
+      if (!ok) {
+        alert(`join 失敗: HTTP ${status}`);
+        return;
       }
+      // 期待: { token, role, step }
+      document.getElementById("ui-role").textContent  = json?.role  ?? "-";
+      document.getElementById("ui-step").textContent  = json?.step  ?? "-";
+      document.getElementById("ui-token").textContent = json?.token ?? "-";
+    })();
 
-      if (action === "reset") {
-        await postForm("/reset", { id });
-        // 表示を初期化してもOK
-        // document.getElementById("role").textContent  = "-";
-        // document.getElementById("token").textContent = "-";
-        // document.getElementById("step").textContent  = "-";
+    // Leave: 表示中 token を使って POST /leave（id, token）
+    document.getElementById("btn-leave").addEventListener("click", async () => {
+      const token = document.getElementById("ui-token").textContent.trim();
+      if (!id) {
+        alert("id が空です。");
+        return;
       }
+      if (!token || token === "-") {
+        alert("token がありません（先に join してください）。");
+        return;
+      }
+      const { ok, status } = await postForm("/leave", { id, token });
+      if (!ok) {
+        alert(`leave 失敗: HTTP ${status}`);
+        return;
+      }
+      alert("leave 完了しました。");
+      // 必要なら画面の表示も初期化
+      // document.getElementById("ui-role").textContent  = "-";
+      // document.getElementById("ui-token").textContent = "-";
+      // document.getElementById("ui-step").textContent  = "-";
     });
   </script>
 </body>
