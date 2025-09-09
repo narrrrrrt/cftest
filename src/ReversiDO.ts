@@ -1,6 +1,6 @@
 // src/ReversiDO.ts
 import type { DurableObjectState } from "@cloudflare/workers-types";
-import { reviveRoom, toPlain, type Room } from "./schema/types";
+import { createRoom, reviveRoom, toPlain, type Room } from "./schema/types";
 import { handleAction, type HandlerCtx } from "./handlers/core";
 import { sse } from "./handlers/sse";
 
@@ -15,54 +15,61 @@ export class ReversiDO {
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url, "http://do");
-    const path = url.pathname;
 
-    // 1) 一度だけパラメータを作る（GET=URL、POST=JSON）
+    // GET=URL、POST=JSON をここで一度だけ読む
     const { id, params } = await this.getParams(request);
 
-    // 2) ルームを用意して ctx 作成
-    const room = await this.ensureRoom(id);
+    // ★★ 1) Room は必ずクラスに"復活"させて渡す
+    const room = await this.ensureRoom(id ?? "default");
+
     const ctx: HandlerCtx = {
       state: this.state,
       room,
-      save: async (r) => { await this.state.storage.put("room", toPlain(r)); }
+      // ★★ 2) 保存は常に toPlain（次回 revive でメソッド復活）
+      save: async (r: Room) => {
+        await this.state.storage.put("room", toPlain(r));
+      }
     };
 
-    // 3) SSE は別ハンドラ、それ以外は core に委譲
-    if (path.startsWith("/sse")) {
+    // SSE は別ハンドラ
+    if (url.pathname.startsWith("/sse")) {
       return sse(request, ctx);
     }
+
+    // ★★ 3) core へは params を必ず渡す（ここがデグレしやすい）
     return handleAction(request, params, ctx);
   }
 
+  // GET は URL クエリ、POST は JSON（form は非対応）
   private async getParams(request: Request): Promise<{ id: string | null; params: Record<string, any> }> {
     const m = request.method.toUpperCase();
     if (m === "GET") {
-      const url = new URL(request.url, "http://do");
-      const params = Object.fromEntries(url.searchParams.entries());
-      const id = params.id != null ? String(params.id) : null;
+      const u = new URL(request.url, "http://do");
+      const params = Object.fromEntries(u.searchParams.entries());
+      const id = params.id ?? null;
       return { id, params };
     }
     if (m === "POST") {
-      let parsed: any = {};
       try {
-        parsed = await request.json(); // ← JSON だけ読む（1回だけ）
-      } catch { parsed = {}; }
-      const id = parsed?.id != null ? String(parsed.id) : null;
-      return { id, params: (parsed && typeof parsed === "object") ? parsed : {} };
+        const parsed: any = await request.json();
+        const id = parsed?.id ?? null;
+        return { id, params: (parsed && typeof parsed === "object") ? parsed : {} };
+      } catch {
+        return { id: null, params: {} };
+      }
     }
     return { id: null, params: {} };
   }
 
-  private async ensureRoom(id: string | null): Promise<Room> {
+  // 既存があれば revive、なければ create → toPlain で保存
+  private async ensureRoom(id: string): Promise<Room> {
     const key = "room";
     const raw = await this.state.storage.get<any>(key);
-    if (!raw) {
-      // 初期生成（ID 未指定でもとりあえず部屋を作る想定ならここで作成）
-      const init: Room = reviveRoom({ /* 初期プレーン */ } as any, id ?? "default");
-      await this.state.storage.put(key, toPlain(init));
-      return init;
+    if (raw) {
+      return reviveRoom(raw);
     }
-    return reviveRoom(raw as any, id ?? "default");
+    const r = createRoom(id);
+    await this.state.storage.put(key, toPlain(r));
+    return r;
   }
 }
