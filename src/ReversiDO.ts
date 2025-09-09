@@ -45,7 +45,7 @@ export class ReversiDO {
 
     // 1) roomId を取得し、対象の DO インスタンスへ"寄せる"
     const roomId = this.getRoomId(request);
-    if (needsId && !roomId) return new Response("missing id", { status: 400 });
+    if (!roomId) return new Response("missing id", { status: 400 });
 
     if (roomId) {
       const targetId = this.env.ReversiDO.idFromName(roomId);
