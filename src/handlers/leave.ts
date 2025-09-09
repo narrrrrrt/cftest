@@ -8,7 +8,6 @@ export const leaveAction: ActionHandler = async (params, ctx) => {
 export const leaveAction: ActionHandler = async (params, ctx) => {
   console.log(JSON.stringify({LEAVE_DEBUG:3,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
   const token = params?.token ?? "";
-  …
 };
 
   if (!token) {
