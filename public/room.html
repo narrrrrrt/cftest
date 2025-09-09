@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>Reversi – Room (GET & POST form-body)</title>
+  <title>Reversi – Room (GET & POST JSON)</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
     .row { margin: 8px 0; }
@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h1>Reversi – Room (GET / POST 並列)</h1>
+  <h1>Reversi – Room (GET / POST JSON)</h1>
 
   <div class="row">
     room id: <code id="ui-id">-</code>
@@ -36,14 +36,14 @@
     <span>→ <code id="url-leave-get"></code></span>
   </div>
 
-  <!-- ========== POST セクション ========== -->
-  <h2>POST メソッド (form-urlencoded)</h2>
+  <!-- ========== POST セクション（JSON） ========== -->
+  <h2>POST メソッド (JSON)</h2>
   <div class="row">
-    <button id="btn-join-post" class="btn">Join (POST form)</button>
+    <button id="btn-join-post" class="btn">Join (POST JSON)</button>
     <span>→ <code>/join</code></span>
   </div>
   <div class="row">
-    <button id="btn-leave-post" class="btn">Leave (POST form)</button>
+    <button id="btn-leave-post" class="btn">Leave (POST JSON)</button>
     <span>→ <code>/leave</code></span>
   </div>
 
@@ -52,7 +52,7 @@
   </div>
 
   <script>
-    // クエリ取り出し
+    // クエリ取り出し（このページが受け取ったクエリ）
     const qp   = new URLSearchParams(location.search);
     const id   = qp.get("id")   ?? "";
     const seat = qp.get("seat") ?? "observer";
@@ -88,35 +88,35 @@
       alert("leave完了(GET)\n" + text);
     });
 
-    // ------------------- POST -------------------
+    // ------------------- POST (JSON) -------------------
     document.getElementById("btn-join-post").addEventListener("click", async () => {
-      const body = new URLSearchParams({ id, seat });
+      const body = { id, seat }; // クエリと同じキーでJSON送信
       const res = await fetch("/join", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString()
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       });
       const text = await res.text();
       let json = null;
       try { json = JSON.parse(text); } catch {}
-      if (!res.ok) { alert(`join失敗(POST): HTTP ${res.status}\n${text}`); return; }
-      document.getElementById("ui-role").textContent   = json?.role  ?? "-";
-      document.getElementById("ui-step").textContent   = json?.step  ?? "-";
-      document.getElementById("ui-token").textContent  = json?.token ?? "-";
+      if (!res.ok) { alert(`join失敗(POST JSON): HTTP ${res.status}\n${text}`); return; }
+      document.getElementById("ui-role").textContent  = json?.role  ?? "-";
+      document.getElementById("ui-step").textContent  = json?.step  ?? "-";
+      document.getElementById("ui-token").textContent = json?.token ?? "-";
     });
 
     document.getElementById("btn-leave-post").addEventListener("click", async () => {
       const token = document.getElementById("ui-token").textContent.trim();
       if (!token || token === "-") { alert("tokenがありません（先にjoinしてください）"); return; }
-      const body = new URLSearchParams({ id, token });
+      const body = { id, token }; // クエリと同じキーでJSON送信
       const res = await fetch("/leave", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString()
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       });
       const text = await res.text();
-      if (!res.ok) { alert(`leave失敗(POST): HTTP ${res.status}\n${text}`); return; }
-      alert("leave完了(POST)\n" + text);
+      if (!res.ok) { alert(`leave失敗(POST JSON): HTTP ${res.status}\n${text}`); return; }
+      alert("leave完了(POST JSON)\n" + text);
     });
   </script>
 </body>
