@@ -27,26 +27,17 @@
 
   <div class="row">
     <button id="btn-join" class="btn">Join</button>
+    <span>→ <code id="url-join"></code></span>
+  </div>
+  <div class="row">
     <button id="btn-leave" class="btn">Leave</button>
+    <span>→ <code id="url-leave"></code></span>
+  </div>
+  <div class="row">
     <a href="/index.html" class="btn">Back to index</a>
   </div>
 
   <script>
-    // ★ URLクエリにも付け、POST本文にも同じ内容を積む（両対応）
-    async function postForm(path, kv) {
-      const qs  = new URLSearchParams(kv);
-      const url = `${path}?${qs.toString()}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: qs.toString(), // ← 本文にも同じものを入れる
-      });
-      const text = await res.text(); // 生のまま読む
-      let json = null;
-      try { json = JSON.parse(text); } catch (_) {}
-      return { ok: res.ok, status: res.status, json, text };
-    }
-
     // クエリ取り出し
     const qp   = new URLSearchParams(location.search);
     const id   = qp.get("id")   ?? "";
@@ -55,24 +46,42 @@
     document.getElementById("ui-id").textContent   = id || "-";
     document.getElementById("ui-seat").textContent = seat;
 
-    // Join
+    // GET で叩く URL を生成
+    const joinUrl  = `/join?id=${encodeURIComponent(id)}&seat=${encodeURIComponent(seat)}`;
+    const leaveUrl = (token) => `/leave?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+
+    // Join ボタン
+    document.getElementById("url-join").textContent = joinUrl;
     document.getElementById("btn-join").addEventListener("click", async () => {
-      if (!id) { alert("id がありません"); return; }
-      const { ok, json, status, text } = await postForm("/join", { id, seat });
-      if (!ok) { alert(`join 失敗: HTTP ${status}\n${text}`); return; }
+      const res  = await fetch(joinUrl, { method: "GET" });
+      const text = await res.text();
+      let json = null;
+      try { json = JSON.parse(text); } catch {}
+      if (!res.ok) {
+        alert(`join 失敗: HTTP ${res.status}\n${text}`);
+        return;
+      }
       document.getElementById("ui-role").textContent  = json?.role  ?? "-";
       document.getElementById("ui-step").textContent  = json?.step  ?? "-";
       document.getElementById("ui-token").textContent = json?.token ?? "-";
+      document.getElementById("url-leave").textContent = leaveUrl(json?.token ?? "");
     });
 
-    // Leave
+    // Leave ボタン
     document.getElementById("btn-leave").addEventListener("click", async () => {
-      if (!id) { alert("id がありません"); return; }
       const token = document.getElementById("ui-token").textContent.trim();
-      if (!token || token === "-") { alert("token がありません（先に join）"); return; }
-      const { ok, status, text } = await postForm("/leave", { id, token });
-      if (!ok) { alert(`leave 失敗: HTTP ${status}\n${text}`); return; }
-      alert("leave 完了");
+      if (!token || token === "-") {
+        alert("token がありません（先に join してください）");
+        return;
+      }
+      const url = leaveUrl(token);
+      const res  = await fetch(url, { method: "GET" });
+      const text = await res.text();
+      if (!res.ok) {
+        alert(`leave 失敗: HTTP ${res.status}\n${text}`);
+        return;
+      }
+      alert("leave 完了\n" + text);
     });
   </script>
 </body>
