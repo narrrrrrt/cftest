@@ -33,9 +33,11 @@ export class ReversiDO {
       }
     }
 
-    // 明示的に id を分離（小文字 "id" 固定）
-    const rawId = params.id;
-    const id = typeof rawId === "string" ? rawId : null;
+    // id が string でも number でも OK にして内部は string 化
+    let id: string | null = null;
+    if (params.id !== undefined && params.id !== null) {
+      id = String(params.id);
+    }
 
     return { id, params };
   }
