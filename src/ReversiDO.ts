@@ -22,7 +22,7 @@ export class ReversiDO {
 
     const method = request.method.toUpperCase();
     if (method === "GET") {
-      const url = new URL(request.url);
+      const url = new URL(request.url, "http://do");
       params = Object.fromEntries(url.searchParams.entries());
     } else if (method === "POST") {
       try {
