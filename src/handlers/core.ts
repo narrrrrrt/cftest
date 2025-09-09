@@ -1,4 +1,4 @@
-// src/handlers/core.ts（コアの要点だけ）
+// src/handlers/core.ts（コアの要点だけ・POST対応版）
 import { pushAll } from "./sse";
 import type { Room } from "../schema/types";
 
@@ -29,10 +29,28 @@ export async function handleAction(request: Request, ctx: HandlerCtx): Promise<R
   const fn = (mod[`${name}Action`] ?? mod.default) as ActionHandler | undefined;
   if (!fn) return json({ error:"handler symbol not exported", expect:`${name}Action` }, 500);
 
-  const params = Object.fromEntries(url.searchParams.entries());
+  // ★ GETクエリに加えて、POST (application/x-www-form-urlencoded) も取り込む
+  let params: Record<string,string> = Object.fromEntries(url.searchParams.entries());
+  if (request.method === "POST") {
+    try {
+      const ct = request.headers.get("content-type") || "";
+      if (ct.includes("application/x-www-form-urlencoded")) {
+        const form = await request.formData();
+        for (const [k,v] of form.entries()) {
+          params[k] = String(v);
+        }
+      }
+      // 他の Content-Type は無視（互換性優先）
+    } catch {
+      // パース失敗時はそのまま（GETのみ）
+    }
+  }
+
   const result = await fn(params, ctx);
 
   if (result?.broadcast !== undefined) pushAll(result.broadcast);
 
   return json(result?.response?.body ?? { ok:true }, result?.response?.status ?? 200);
 }
+
+export default handleAction;
