@@ -67,11 +67,11 @@ export class ReversiDO {
     const path = url.pathname;
 
     // 1) roomId を取得し、対象の DO インスタンスへ"寄せる"
-    const { roomId, params } = await this.getParams(request);
-    if (!roomId) return new Response("missing id", { status: 400 });
+    const { id, params } = await this.getParams(request);
+    if (!id) return new Response("missing id", { status: 400 });
 
-    if (roomId) {
-      const targetId = this.env.ReversiDO.idFromName(roomId);
+    if (id) {
+      const targetId = this.env.ReversiDO.idFromName(id);
       const selfId = (this.state.id as any).toString?.() ?? String(this.state.id);
       const tgtId  = (targetId as any).toString?.() ?? String(targetId);
       if (String(selfId) !== String(tgtId)) {
@@ -81,7 +81,7 @@ export class ReversiDO {
     }
 
     // 2) このインスタンスが対象：room を DO 側で用意して handlers に"渡す"
-    const room = await this.ensureRoom(roomId!);
+    const room = await this.ensureRoom(id);
     const ctx: HandlerCtx = {
       state: this.state,
       room,
