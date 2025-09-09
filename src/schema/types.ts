@@ -32,6 +32,7 @@ export type BoardRow = string;
 export type Board = BoardRow[];
 
 export type Status = "waiting" | "black" | "white" | "leave" | "ended";
+export type Seat = "black" | "white" | "observer";
 export type Score  = { black: number; white: number };
 
 export class Room {
@@ -71,7 +72,7 @@ export class Room {
    * - auto は黒→白の優先で空きを探す
    * - 両者そろえば startIfReady()。片席のみなら status=leave
    */
-  joinByToken(token: string, seat: "black" | "white" | "auto" = "auto"): boolean {
+joinByToken(token: string, seat: "black" | "white" | "observer" = "observer"): boolean {
     if (!token) return false;
 
     // 既に同じ token が座っている場合は変更なし（開始判定だけ）
