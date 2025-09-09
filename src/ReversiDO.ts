@@ -18,7 +18,26 @@ export class ReversiDO {
     const u = new URL(req.url, "http://do");
     return u.searchParams.get("id");
   }
+  
+  private async getParams(request: Request): Promise<{ roomId: string | null, params: any }> {
+    const url = new URL(request.url);
+    const query = Object.fromEntries(url.searchParams.entries());
 
+    let body: any = {};
+    if (request.method !== "GET") {
+      try {
+        body = await request.json();
+      } catch {
+        body = {};
+      }
+    }
+
+    const params = { ...query, body };
+    const roomId = query.id ?? body.id ?? null;
+
+    return { roomId, params };
+  }
+  
   private async ensureRoom(roomId: string): Promise<Room> {
     // 保存されているプレーンデータを取得
     const raw = await this.state.storage.get<RoomPlain>("room");
@@ -44,7 +63,7 @@ export class ReversiDO {
     const path = url.pathname;
 
     // 1) roomId を取得し、対象の DO インスタンスへ"寄せる"
-    const roomId = this.getRoomId(request);
+    const { roomId, params } = await this.getParams(request);
     if (!roomId) return new Response("missing id", { status: 400 });
 
     if (roomId) {
