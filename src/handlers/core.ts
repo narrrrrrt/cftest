@@ -19,7 +19,7 @@ function json(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type":"application/json" } });
 }
 
-export async function handleAction(request: Request, ctx: HandlerCtx): Promise<Response> {
+export async function handleAction(request: Request, params: Record<string, any>, ctx: HandlerCtx): Promise<Response> {
   const url  = new URL(request.url, "http://do");
   const name = url.pathname.slice(1);              // "join" など
   const importer = importers[name];
@@ -29,7 +29,7 @@ export async function handleAction(request: Request, ctx: HandlerCtx): Promise<R
   const fn = (mod[`${name}Action`] ?? mod.default) as ActionHandler | undefined;
   if (!fn) return json({ error:"handler symbol not exported", expect:`${name}Action` }, 500);
 
-  const params = Object.fromEntries(url.searchParams.entries());
+  //const params = Object.fromEntries(url.searchParams.entries());
   const result = await fn(params, ctx);
 
   if (result?.broadcast !== undefined) pushAll(result.broadcast);
