@@ -13,29 +13,31 @@ export class ReversiDO {
     this.state = state;
     this.env = env;
   }
-
-  private getRoomId(req: Request): string | null {
-    const u = new URL(req.url, "http://do");
-    return u.searchParams.get("id");
-  }
   
-  private async getParams(request: Request): Promise<{ roomId: string | null, params: any }> {
-    const url = new URL(request.url);
-    const query = Object.fromEntries(url.searchParams.entries());
+  private async getParams(request: Request): Promise<{
+    id: string | null;
+    params: Record<string, any>;
+  }> {
+    let params: Record<string, any> = {};
 
-    let body: any = {};
-    if (request.method !== "GET") {
+    const method = request.method.toUpperCase();
+    if (method === "GET") {
+      const url = new URL(request.url);
+      params = Object.fromEntries(url.searchParams.entries());
+    } else if (method === "POST") {
       try {
-        body = await request.json();
+        // application/json を想定
+        params = await request.json();
       } catch {
-        body = {};
+        params = {};
       }
     }
 
-    const params = { ...query, body };
-    const roomId = query.id ?? body.id ?? null;
+    // 明示的に id を分離（小文字 "id" 固定）
+    const rawId = params.id;
+    const id = typeof rawId === "string" ? rawId : null;
 
-    return { roomId, params };
+    return { id, params };
   }
   
   private async ensureRoom(roomId: string): Promise<Room> {
