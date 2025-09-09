@@ -1,5 +1,3 @@
-import { probe } from "./utility/probe";
-
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
@@ -15,8 +13,6 @@ export default {
     // アセットが 404 → DO にフォワード（global ID）
     const id = env.ReversiDO.idFromName("global");
     const stub = env.ReversiDO.get(id);
-
-await probe("INDEX->DO pre", request);
 
     // 元の URL を維持したまま DO にフォワード（パス・クエリ付き）
     return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
