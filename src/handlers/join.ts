@@ -1,6 +1,6 @@
 import type { ActionHandler } from "./core";
 import type { Seat } from "../schema/types";
-import { joinMethod } from "./joinMethod";
+import { joinMethod } from "../usecases/joinMethod";
 
 export const joinAction: ActionHandler = async (params, ctx) => {
   const seat = String(params?.seat ?? "observer") as Seat;
