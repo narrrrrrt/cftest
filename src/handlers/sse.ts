@@ -1,66 +1,79 @@
-// src/handlers/sse.ts
+// sse.ts
 import type { HandlerCtx } from "./core";
 
-type Ctrl = ReadableStreamDefaultController;
-const encoder = new TextEncoder();
+// 部屋IDごとにコネクション(Writer)を束ねる
+const channels = new Map<string, Set<WritableStreamDefaultWriter<Uint8Array>>>();
+const te = new TextEncoder();
 
-// この DO（＝この room）内で使う接続バケツ（モジュール内に閉じる）
-const buckets = new Map<string, Set<Ctrl>>();
+/**
+ * クライアントからの SSE 接続ハンドラ
+ * - 同じ DO インスタンス内で、ctx.room.id をキーに接続を束ねます
+ * - 接続直後に hello を1発送ります（疎通確認用）
+ */
+export function sse(request: Request, ctx: HandlerCtx): Response {
+  const roomId = String((ctx as any).room?.id ?? "default");
 
-function bucketFor(roomId: string): Set<Ctrl> {
-  const key = String(roomId ?? "");
-  let set = buckets.get(key);
+  // 送信用のストリームを用意（readable をレスポンスに返し、writable に書き込む）
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const writer = writable.getWriter();
+
+  // 部屋のコネクションセットへ登録
+  let set = channels.get(roomId);
   if (!set) {
-    set = new Set<Ctrl>();
-    buckets.set(key, set);
+    set = new Set();
+    channels.set(roomId, set);
   }
-  return set;
+  set.add(writer);
+
+  // 接続直後に1発（任意の初期イベント）
+  writer.write(te.encode(`data: ${JSON.stringify({ type: "hello", roomId })}\n\n`)).catch(() => {});
+
+  // レスポンス（SSEヘッダ）
+  const response = new Response(readable, {
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      "connection": "keep-alive",
+      // CORS が必要なら下を有効化
+      // "access-control-allow-origin": "*",
+    },
+  });
+
+  // クライアント切断時のクリーンアップ
+  // Cloudflare ではクライアント切断で write が throw するので、
+  // 実際の削除は pushAll 側の write 失敗時にも行います。
+  // 念のためレスポンス閉鎖のフックを試みる:
+  (response as any)?.webSocket?.closed?.finally?.(() => {
+    try { set!.delete(writer); } catch {}
+  });
+
+  return response;
 }
 
 /**
- * この DO 内の全接続へブロードキャスト（自分も含む）。
- * 実装はこのモジュールに閉じる。core などから呼べるよう export。
+ * 指定 roomId に接続中の全クライアントへイベントを配信
+ * @returns 実際に送れた接続数
  */
-export function pushAll(data: unknown, _state?: DurableObjectState): void {
-  const chunk = encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
-  for (const set of buckets.values()) {
-    for (const ctrl of set) {
-      try {
-        ctrl.enqueue(chunk);
-      } catch {
-        // 壊れた接続は無視（必要なら除去ロジックを追加）
-      }
+export function pushAll(roomId: string, data: unknown): number {
+  const set = channels.get(roomId);
+  if (!set || set.size === 0) return 0;
+
+  const payload = te.encode(`data: ${JSON.stringify(data)}\n\n`);
+  let delivered = 0;
+  const dead: WritableStreamDefaultWriter<Uint8Array>[] = [];
+
+  for (const w of set) {
+    try {
+      w.write(payload);
+      delivered++;
+    } catch {
+      // 切断済みの writer を掃除
+      dead.push(w);
     }
   }
-}
-
-/**
- * SSE エンドポイント
- * - start だけ（cancel なし）
- * - start では enqueue しない
- * - 接続登録後、初回通知は pushAll({ type: "init", entryParams }) で送る
- */
-export async function sse(request: Request, ctx: HandlerCtx): Promise<Response> {
-  const url = new URL(request.url, "http://do"); // 相対URL対策
-  const entryParams = Object.fromEntries(url.searchParams.entries());
-  const roomId = String(ctx.room.id);
-
-  const stream = new ReadableStream({
-    start(controller) {
-      // 1) この room のバケツに登録
-      const set = bucketFor(roomId);
-      set.add(controller);
-
-      // 2) 初回通知（自分も含め pushAll 経由で配信）
-      pushAll({ type: "init", entryParams });
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache",
-      "connection": "keep-alive",
-    },
-  });
+  if (dead.length) {
+    for (const w of dead) set.delete(w);
+    if (set.size === 0) channels.delete(roomId);
+  }
+  return delivered;
 }
