@@ -1,22 +1,26 @@
-// src/handlers/join.ts
 import type { ActionHandler } from "./core";
+import { joinMethod } from "../usecases/joinMethod";
+import type { Seat } from "../schema/types";
 
 export const joinAction: ActionHandler = async (params, ctx) => {
-  const token = params?.body?.token as string | undefined;
-  const seat  = (params?.body?.seat as "black"|"white"|"auto"|undefined) ?? "auto";
+  const seat = String(params?.body?.seat ?? params?.seat ?? "observer") as Seat;
 
-  if (token) {
-    const changed = ctx.room.joinByToken(token, seat);
-    if (changed) await ctx.save(ctx.room);
+  const { token, role } = await joinMethod(ctx, seat);
 
-    return {
-      broadcast: { action: "join", ...ctx.room.snapshot() },
-      response:  { status: 200, body: { ok: true } },
-    };
-  }
-
-  // token 無しは何もしない（broadcast なし）
-  return { response: { status: 200, body: { ok: true } } };
+  return {
+    broadcast: {
+      type:   "join",
+      status: ctx.room.status,
+      step:   ctx.room.step,
+      black:  !!ctx.room.black,
+      white:  !!ctx.room.white,
+      board:  ctx.room.board(),
+    },
+    response: {
+      status: 200,
+      body: { token, role, step: ctx.room.step },
+    },
+  };
 };
 
 export default joinAction;
