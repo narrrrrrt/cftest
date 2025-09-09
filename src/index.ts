@@ -2,30 +2,28 @@ export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url);
 
-    // まず ASSETS に問い合わせ（HTML, CSS, JS, etc）
-    // const assetResponse = await env.ASSETS.fetch(request);
+    // いまは切り分けのため ASSETS は通さない前提
 
-    // アセットが見つかればそれを返す（404 以外）
-    // if (assetResponse.status !== 404) {
-    //   return assetResponse;
-    // }
-
-    // アセットに行かず、必ず DO にフォワード（global ID）
-    const id = env.ReversiDO.idFromName("global");
+    const id   = env.ReversiDO.idFromName("global");
     const stub = env.ReversiDO.get(id);
 
-    // 元の URL を維持したまま DO にフォワード（パス・クエリ付き）
     try {
-    return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
+      // ← doReq の生成そのものを try の中に入れる
+      const doReq = new Request(
+        `http://do${url.pathname}${url.search}`,
+        request.clone()  // used body を避けるため必ず clone
+      );
+
+      const resp = await stub.fetch(doReq);
+      return resp; // ここはそのまま返す（500でもキャッチはしない）
     } catch (e: any) {
+      // ここに来たら「doReq生成」か「stub.fetch」のどちらかで落ちている
       return new Response(
-        JSON.stringify({ error: "DO fetch failed", message: String(e?.message ?? e) }),
+        JSON.stringify({ error: "index catch", message: String(e?.message ?? e) }),
         { status: 500, headers: { "content-type": "application/json" } }
       );
     }
- 
-  },
+  }
 };
 
-// DO を export（wrangler.toml に書いてあれば必須）
 export { ReversiDO } from "./ReversiDO";
