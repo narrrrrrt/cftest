@@ -32,8 +32,6 @@ export async function handleAction(
   const name = url.pathname.replace(/^\/+/, ""); // "join" など
   const importer = importers[name];
   if (!importer) return json({ error:"unsupported endpoint", name, known:Object.keys(importers) }, 404);
-
-  try {
     const mod = await importer();
     const fn = (mod[`${name}Action`] ?? mod.default) as ActionHandler | undefined;
     if (!fn) return json({ error:"handler symbol not exported", expect:`${name}Action` }, 500);
@@ -43,9 +41,4 @@ export async function handleAction(
 
     if (result?.broadcast !== undefined) pushAll(result.broadcast);
     return json(result?.response?.body ?? { ok:true }, result?.response?.status ?? 200);
-  } catch (e: any) {
-    // まずは中身を見たいので詳細返す（公開環境では絞ってOK）
-    return json({ error: "handler crash", name, message: String(e?.message ?? e),
-                  stack: e?.stack, paramsKeys: Object.keys(params ?? {}) }, 500);
-  }
 }
