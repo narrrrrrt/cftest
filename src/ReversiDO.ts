@@ -4,7 +4,7 @@ import type { Env } from "./schema/types";
 import { createRoom, type Room } from "./schema/types";
 import { sse } from "./handlers/sse";
 import { handleAction, type HandlerCtx } from "./handlers/core";
-import { extractRoomId } from "../utility/room";
+import { extractRoomId } from "./utility/room";
 
 export class ReversiDO {
   private state: DurableObjectState;
