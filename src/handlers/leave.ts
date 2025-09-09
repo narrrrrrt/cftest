@@ -1,5 +1,5 @@
 import type { ActionHandler } from "./core";
-import { leaveMethod } from "./leaveMethod";
+import { leaveMethod } from "../usecases/leaveMethod";
 
 export const leaveAction: ActionHandler = async (params, ctx) => {
   const token = params?.token != null ? String(params.token) : "";
