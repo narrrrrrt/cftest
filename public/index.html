@@ -1,39 +1,129 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <title>Join Links</title>
-  </head>
-  <body>
-    <h1>JOIN テストリンク</h1>
+<head>
+  <meta charset="utf-8" />
+  <title>Reversi DO – Index</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
+    h1 { margin-bottom: 6px; }
+    .desc { color:#666; margin-bottom: 16px; }
+    .rooms { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 16px; }
+    .card { border:1px solid #ddd; border-radius:10px; padding:12px; }
+    .title { font-weight:600; margin-bottom:8px; }
+    .btns { display:flex; gap:8px; flex-wrap: wrap; }
+    a.button { display:inline-block; padding:6px 10px; border:1px solid #ccc; border-radius:6px; text-decoration:none; }
+    a.button:hover { background:#f7f7f7; }
+    .result { margin-top: 20px; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa; }
+    code { background:#f6f8fa; padding:2px 6px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <h1>Reversi – テストリンク</h1>
+  <div class="desc">
+    すべて <code>POST</code> + <code>application/x-www-form-urlencoded</code> で送ります（URLにクエリは付けません）。<br/>
+    join: <code>id</code>, <code>seat</code>（black/white/observer） / reset: <code>id</code>
+  </div>
 
-    <ul>
-      <li><a href="/join?id=1&seat=black">/join?id=1&seat=black</a></li>
-      <li><a href="/join?id=1&seat=white">/join?id=1&seat=white</a></li>
-      <li><a href="/join?id=1&seat=observer">/join?id=1&seat=observer</a></li>
-      <li><a href="/reset?id=1">/reset?id=1</a></li>
-    </ul>
+  <div class="rooms">
+    <!-- Room 1 -->
+    <div class="card">
+      <div class="title">Room 1</div>
+      <div class="btns">
+        <a href="#" class="button" data-action="join"  data-id="1" data-seat="black">Join (black)</a>
+        <a href="#" class="button" data-action="join"  data-id="1" data-seat="white">Join (white)</a>
+        <a href="#" class="button" data-action="join"  data-id="1" data-seat="observer">Join (observer)</a>
+        <a href="#" class="button" data-action="reset" data-id="1">Reset</a>
+      </div>
+    </div>
 
-    <ul>
-      <li><a href="/join?id=2&seat=black">/join?id=2&seat=black</a></li>
-      <li><a href="/join?id=2&seat=white">/join?id=2&seat=white</a></li>
-      <li><a href="/join?id=2&seat=observer">/join?id=2&seat=observer</a></li>
-      <li><a href="/reset?id=2">/reset?id=2</a></li>
-    </ul>
+    <!-- Room 2 -->
+    <div class="card">
+      <div class="title">Room 2</div>
+      <div class="btns">
+        <a href="#" class="button" data-action="join"  data-id="2" data-seat="black">Join (black)</a>
+        <a href="#" class="button" data-action="join"  data-id="2" data-seat="white">Join (white)</a>
+        <a href="#" class="button" data-action="join"  data-id="2" data-seat="observer">Join (observer)</a>
+        <a href="#" class="button" data-action="reset" data-id="2">Reset</a>
+      </div>
+    </div>
 
-    <ul>
-      <li><a href="/join?id=3&seat=black">/join?id=3&seat=black</a></li>
-      <li><a href="/join?id=3&seat=white">/join?id=3&seat=white</a></li>
-      <li><a href="/join?id=3&seat=observer">/join?id=3&seat=observer</a></li>
-      <li><a href="/reset?id=3">/reset?id=3</a></li>
-    </ul>
+    <!-- Room 3 -->
+    <div class="card">
+      <div class="title">Room 3</div>
+      <div class="btns">
+        <a href="#" class="button" data-action="join"  data-id="3" data-seat="black">Join (black)</a>
+        <a href="#" class="button" data-action="join"  data-id="3" data-seat="white">Join (white)</a>
+        <a href="#" class="button" data-action="join"  data-id="3" data-seat="observer">Join (observer)</a>
+        <a href="#" class="button" data-action="reset" data-id="3">Reset</a>
+      </div>
+    </div>
 
-    <ul>
-      <li><a href="/join?id=4&seat=black">/join?id=4&seat=black</a></li>
-      <li><a href="/join?id=4&seat=white">/join?id=4&seat=white</a></li>
-      <li><a href="/join?id=4&seat=observer">/join?id=4&seat=observer</a></li>
-      <li><a href="/reset?id=4">/reset?id=4</a></li>
-    </ul>
+    <!-- Room 4 -->
+    <div class="card">
+      <div class="title">Room 4</div>
+      <div class="btns">
+        <a href="#" class="button" data-action="join"  data-id="4" data-seat="black">Join (black)</a>
+        <a href="#" class="button" data-action="join"  data-id="4" data-seat="white">Join (white)</a>
+        <a href="#" class="button" data-action="join"  data-id="4" data-seat="observer">Join (observer)</a>
+        <a href="#" class="button" data-action="reset" data-id="4">Reset</a>
+      </div>
+    </div>
+  </div>
 
-  </body>
+  <div class="result">
+    <strong>Last Response</strong><br/>
+    room: <code id="out-room">-</code> /
+    role: <code id="out-role">-</code> /
+    step: <code id="out-step">-</code> /
+    token: <code id="out-token">-</code> /
+    status: <code id="out-status">-</code>
+  </div>
+
+  <script>
+    async function postForm(path, payload) {
+      const body = new URLSearchParams(payload);
+      const res  = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      let json = null;
+      try { json = await res.json(); } catch (_) {}
+      return { ok: res.ok, status: res.status, json };
+    }
+
+    document.addEventListener("click", async (e) => {
+      const a = e.target.closest("a.button");
+      if (!a) return;
+      e.preventDefault();
+
+      const id    = a.dataset.id;
+      const action= a.dataset.action;
+
+      if (action === "join") {
+        const seat = a.dataset.seat || "observer";
+        const { ok, json } = await postForm("/join", { id, seat });
+        if (!ok) { alert("join NG"); return; }
+
+        // 期待: { token, role, step } が返る
+        document.getElementById("out-room").textContent  = id;
+        document.getElementById("out-role").textContent  = json?.role ?? "-";
+        document.getElementById("out-step").textContent  = json?.step ?? "-";
+        document.getElementById("out-token").textContent = json?.token ?? "-";
+        // status は SSE 側の情報だが、join 直後の room.status を HTTPで返していない場合はダッシュのまま
+        document.getElementById("out-status").textContent = "-";
+      }
+
+      if (action === "reset") {
+        await postForm("/reset", { id });
+        // 表示は必要に応じてリセット
+        // document.getElementById("out-room").textContent  = id;
+        // document.getElementById("out-role").textContent  = "-";
+        // document.getElementById("out-step").textContent  = "-";
+        // document.getElementById("out-token").textContent = "-";
+        // document.getElementById("out-status").textContent= "-";
+      }
+    });
+  </script>
+</body>
 </html>
