@@ -55,7 +55,7 @@ export async function handleAction(
   }
   
 console.log(JSON.stringify({LEAVE_DEBUG:2,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
-const result = await fn(params, ctx);
+
 
   const result = await fn(params, ctx);
 
