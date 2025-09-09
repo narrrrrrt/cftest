@@ -1,5 +1,9 @@
+// handlers/core.ts
 import { pushAll } from "./sse";
+// あなたの実装に合わせて import を調整してください
+// Room 型はクラス（メソッド付き）であること
 import type { Room } from "../schema/types";
+import type { DurableObjectState } from "@cloudflare/workers-types";
 
 export type HandlerCtx = {
   state: DurableObjectState;
@@ -12,12 +16,15 @@ export type ActionResult = {
   broadcast?: unknown;
 };
 
-export type ActionHandler = (params: Record<string, any>, ctx: HandlerCtx) => Promise<ActionResult>;
+export type ActionHandler = (
+  params: Record<string, any>,
+  ctx: HandlerCtx
+) => Promise<ActionResult>;
 
 const importers: Record<string, () => Promise<{ default?: ActionHandler; [k: string]: unknown }>> = {
   join:  () => import("./join"),
-  move:  () => import("./move"),
   leave: () => import("./leave"),
+  move:  () => import("./move"),
   reset: () => import("./reset"),
 };
 
@@ -37,18 +44,23 @@ export async function handleAction(
   const name = url.pathname.replace(/^\/+/, "");
 
   const importer = importers[name];
-  if (!importer) return json({ error: "unsupported endpoint", name, known: Object.keys(importers) }, 404);
+  if (!importer) {
+    return json({ error: "unsupported endpoint", name, known: Object.keys(importers) }, 404);
+  }
 
   const mod = await importer();
   const fn = (mod[`${name}Action`] ?? mod.default) as ActionHandler | undefined;
-  if (!fn) return json({ error: "handler symbol not exported", expect: `${name}Action` }, 500);
+  if (!fn) {
+    return json({ error: "handler symbol not exported", expect: `${name}Action` }, 500);
+  }
 
   const result = await fn(params, ctx);
 
   if (result?.broadcast !== undefined) {
-    // ← ここだけ変更（部屋単位で配信）
-    pushAll(ctx.room.id, result.broadcast);
+    pushAll(ctx.room.id as unknown as string, result.broadcast);
   }
 
   return json(result?.response?.body ?? { ok: true }, result?.response?.status ?? 200);
 }
+
+export default handleAction;
