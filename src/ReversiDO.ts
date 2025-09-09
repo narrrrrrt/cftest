@@ -32,6 +32,8 @@ export class ReversiDO {
         await this.state.storage.put("room", toPlain(r));
       }
     };
+    
+ console.log(JSON.stringify({LEAVE_DEBUG:1,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
 
     if (url.pathname.startsWith("/sse")) {
       return sse(request, ctx);

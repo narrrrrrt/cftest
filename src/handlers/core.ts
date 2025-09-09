@@ -53,6 +53,9 @@ export async function handleAction(
   if (!fn) {
     return json({ error: "handler symbol not exported", expect: `${name}Action` }, 500);
   }
+  
+console.log(JSON.stringify({LEAVE_DEBUG:2,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
+const result = await fn(params, ctx);
 
   const result = await fn(params, ctx);
 
