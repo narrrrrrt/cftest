@@ -15,8 +15,19 @@ export default {
     const stub = env.ReversiDO.get(id);
 
 
+    try {
     // 元の URL を維持したまま DO にフォワード（パス・クエリ付き）
     return stub.fetch(new Request(`http://do${url.pathname}${url.search}`, request));
+    } catch (e: any) {
+      // ← ここだけ try/catch（最小の直し）
+      return new Response(
+        JSON.stringify({ error: "DO fetch failed", message: String(e?.message ?? e) }),
+        { status: 500, headers: { "content-type": "application/json" } }
+      );
+    }
+ 
+    
+    
   },
 };
 
