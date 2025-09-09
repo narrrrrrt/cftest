@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>Reversi – Room (POST版)</title>
+  <title>Reversi – Room (POST form-body版)</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
     .row { margin: 8px 0; }
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h1>Reversi – Room (POST版)</h1>
+  <h1>Reversi – Room (POST form-body版)</h1>
 
   <div class="row">
     room id: <code id="ui-id">-</code>
@@ -26,12 +26,12 @@
   </div>
 
   <div class="row">
-    <button id="btn-join" class="btn">Join (POST)</button>
-    <span>→ <code id="url-join">/join (POST)</code></span>
+    <button id="btn-join" class="btn">Join (POST form)</button>
+    <span>→ <code>/join</code></span>
   </div>
   <div class="row">
-    <button id="btn-leave" class="btn">Leave (POST)</button>
-    <span>→ <code id="url-leave">/leave (POST)</code></span>
+    <button id="btn-leave" class="btn">Leave (POST form)</button>
+    <span>→ <code>/leave</code></span>
   </div>
   <div class="row">
     <a href="/index.html" class="btn">Back to index</a>
@@ -46,12 +46,13 @@
     document.getElementById("ui-id").textContent   = id || "-";
     document.getElementById("ui-seat").textContent = seat;
 
-    // Join ボタン (POST)
+    // Join ボタン (POST, form-encoded)
     document.getElementById("btn-join").addEventListener("click", async () => {
+      const body = new URLSearchParams({ id, seat });
       const res = await fetch("/join", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, seat })
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
       });
       const text = await res.text();
       let json = null;
@@ -65,17 +66,18 @@
       document.getElementById("ui-token").textContent  = json?.token ?? "-";
     });
 
-    // Leave ボタン (POST)
+    // Leave ボタン (POST, form-encoded)
     document.getElementById("btn-leave").addEventListener("click", async () => {
       const token = document.getElementById("ui-token").textContent.trim();
       if (!token || token === "-") {
         alert("token がありません（先に join してください）");
         return;
       }
+      const body = new URLSearchParams({ id, token });
       const res = await fetch("/leave", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, token })
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
       });
       const text = await res.text();
       if (!res.ok) {
