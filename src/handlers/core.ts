@@ -1,4 +1,4 @@
-// src/handlers/core.ts（コアの要点だけ・POST対応版）
+// src/handlers/core.ts（コアの要点だけ・POST対応版） 
 import { pushAll } from "./sse";
 import type { Room } from "../schema/types";
 
