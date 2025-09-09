@@ -26,12 +26,12 @@
   </div>
 
   <div class="row">
+    <button id="btn-join" class="btn">Join</button>
     <button id="btn-leave" class="btn">Leave</button>
     <a href="/index.html" class="btn">Back to index</a>
   </div>
 
   <script>
-    // 共通: x-www-form-urlencoded で POST
     async function postForm(path, kv) {
       const body = new URLSearchParams(kv);
       const res  = await fetch(path, {
@@ -44,53 +44,36 @@
       return { ok: res.ok, status: res.status, json };
     }
 
-    // クエリ取得
+    // クエリから id, seat を拾う
     const qp   = new URLSearchParams(location.search);
     const id   = qp.get("id")   ?? "";
-    const seat = qp.get("seat") ?? "observer"; // 念のため既定 observer
+    const seat = qp.get("seat") ?? "observer";
 
-    // 画面にクエリ表示
     document.getElementById("ui-id").textContent   = id || "-";
     document.getElementById("ui-seat").textContent = seat;
 
-    // 初回 join（id/seat を POST）
-    (async () => {
-      if (!id) {
-        alert("id が指定されていません。index から入り直してください。");
-        return;
-      }
+    // Join ボタン
+    document.getElementById("btn-join").addEventListener("click", async () => {
+      if (!id) { alert("id がありません"); return; }
       const { ok, json, status } = await postForm("/join", { id, seat });
-      if (!ok) {
-        alert(`join 失敗: HTTP ${status}`);
-        return;
-      }
-      // 期待: { token, role, step }
+      if (!ok) { alert(`join 失敗: HTTP ${status}`); return; }
+
       document.getElementById("ui-role").textContent  = json?.role  ?? "-";
       document.getElementById("ui-step").textContent  = json?.step  ?? "-";
       document.getElementById("ui-token").textContent = json?.token ?? "-";
-    })();
+    });
 
-    // Leave: 表示中 token を使って POST /leave（id, token）
+    // Leave ボタン
     document.getElementById("btn-leave").addEventListener("click", async () => {
+      if (!id) { alert("id がありません"); return; }
       const token = document.getElementById("ui-token").textContent.trim();
-      if (!id) {
-        alert("id が空です。");
-        return;
-      }
       if (!token || token === "-") {
-        alert("token がありません（先に join してください）。");
+        alert("token がありません（先に join してください）");
         return;
       }
       const { ok, status } = await postForm("/leave", { id, token });
-      if (!ok) {
-        alert(`leave 失敗: HTTP ${status}`);
-        return;
-      }
-      alert("leave 完了しました。");
-      // 必要なら画面の表示も初期化
-      // document.getElementById("ui-role").textContent  = "-";
-      // document.getElementById("ui-token").textContent = "-";
-      // document.getElementById("ui-step").textContent  = "-";
+      if (!ok) { alert(`leave 失敗: HTTP ${status}`); return; }
+      alert("leave 完了しました");
     });
   </script>
 </body>
