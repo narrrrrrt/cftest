@@ -14,15 +14,9 @@ export class ReversiDO {
     this.env = env;
   }
 
-
   private getRoomId(req: Request): string | null {
     const u = new URL(req.url, "http://do");
-    return u.searchParams.get("id") ?? u.searchParams.get("roomId");
-  }
-
-  /** このリクエストは部屋IDが必要（SSE/各アクション） */
-  private needsRoomId(): boolean {
-    return true; // 本プロジェクトではすべて room 単位。不要なら細分化してOK
+    return u.searchParams.get("id");
   }
 
   private async ensureRoom(roomId: string): Promise<Room> {
@@ -50,8 +44,7 @@ export class ReversiDO {
     const path = url.pathname;
 
     // 1) roomId を取得し、対象の DO インスタンスへ"寄せる"
-    const needsId = this.needsRoomId();
-    const roomId = needsId ? this.getRoomId(request) : null;
+    const roomId = this.getRoomId(request);
     if (needsId && !roomId) return new Response("missing id", { status: 400 });
 
     if (roomId) {
