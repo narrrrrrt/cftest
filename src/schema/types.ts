@@ -174,15 +174,22 @@ joinByToken(token: string, seat: "black" | "white" | "observer" = "observer"): b
     return { black, white };
   }
 
-  /**
-   * 退室処理：token に一致する参加者を取り除き、必要なら waiting/leave に整える
-   * - 観戦者配列なし前提（使うなら適宜追加）
-   */
-  leaveByToken(token: string): void {
-    let touched = false;
-    if (this.black === token) { this.black = null; touched = true; }
-    if (this.white === token) { this.white = null; touched = true; }
-    if (touched) this.normalizeAfterLeave();
+  leaveByToken(token: string): boolean {
+    if (!token) return false;
+
+    let changed = false;
+    if (this.black === token) { this.black = null; changed = true; }
+    if (this.white === token) { this.white = null; changed = true; }
+
+    if (!changed) return false;
+
+    // 盤面を「初期配置」ではなく全 '-' にクリア
+    this.boardData = Array(8).fill("--------");
+
+    // 状態: 両席空なら waiting、片席残なら leave
+    this.status = (!this.black && !this.white) ? "waiting" : "leave";
+
+    return true;
   }
 
   /** 退室後の最小調整：両席空→waiting/初期化、片席残→status=leave */

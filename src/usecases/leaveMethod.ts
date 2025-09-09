@@ -1,36 +1,40 @@
 import type { HandlerCtx } from "../handlers/core";
 import type { Room } from "../schema/types";
-import { initialBoard } from "../utility/reversi";
 
-/**
- * leaveMethod:
- * - token に一致する参加者を退席させる
- * - 両席空なら waiting へ初期化（board/step をリセット）
- * - 片席残なら status=leave
- * - 状態が変わったら step++ して保存
- * - 返り値は void（removed 等は返さない）
- */
-export async function leaveMethod(ctx: HandlerCtx, token: string): Promise<void> {
-  const room = ctx.room as Room;
-  if (!token) return; // 仕様：トークン無しは何もしない
+export const leaveAction: ActionHandler = async (params, ctx) => {
+  const token = params?.token != null ? String(params.token) : "";
 
-  let changed = false;
+  const changed = ctx.room.leaveByToken(token);
 
-  if (room.black === token) { room.black = null; changed = true; }
-  if (room.white === token) { room.white = null; changed = true; }
+  if (changed) {
+    // 変更があったときだけ step++
+    ctx.room.step += 1;
+    await ctx.save(ctx.room);
 
-  if (!changed) return; // 該当なしなら何もしない
-
-  if (!room.black && !room.white) {
-    // 両者不在 → 完全初期化
-    room.status = "waiting";
-    room.step   = 0;
-    room.boardData = initialBoard();
-  } else {
-    // どちらか在席 → 中断状態へ
-    room.status = "leave";
+    return {
+      broadcast: {
+        type: "leave",
+        status: ctx.room.status,
+        step: ctx.room.step,
+        black: !!ctx.room.black,
+        white: !!ctx.room.white,
+        board: ctx.room.board(),
+      },
+      response: {
+        status: 200,
+        body: { ok: true }
+      }
+    };
   }
 
-  room.step += 1;
-  await ctx.save(room);
+  // 空振りのときも 200 を返す（非リーク）
+  return {
+    response: {
+      status: 200,
+      body: { ok: true }
+    }
+  };
+};
+
+export default leaveAction;
 }
