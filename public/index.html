@@ -5,34 +5,30 @@
   <title>Reversi DO – Index</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 24px; }
-    h1 { margin-bottom: 6px; }
-    .desc { color:#666; margin-bottom: 16px; }
     .rooms { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 16px; }
     .card { border:1px solid #ddd; border-radius:10px; padding:12px; }
     .title { font-weight:600; margin-bottom:8px; }
     .btns { display:flex; gap:8px; flex-wrap: wrap; }
     a.button { display:inline-block; padding:6px 10px; border:1px solid #ccc; border-radius:6px; text-decoration:none; }
     a.button:hover { background:#f7f7f7; }
+    .hint { color:#666; font-size:12px; margin-top:6px; }
     .result { margin-top: 20px; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa; }
     code { background:#f6f8fa; padding:2px 6px; border-radius:4px; }
   </style>
 </head>
 <body>
   <h1>Reversi – テストリンク</h1>
-  <div class="desc">
-    すべて <code>POST</code> + <code>application/x-www-form-urlencoded</code> で送ります（URLにクエリは付けません）。<br/>
-    join: <code>id</code>, <code>seat</code>（black/white/observer） / reset: <code>id</code>
-  </div>
+  <div class="hint">※ クリックすると <code>POST</code> + <code>x-www-form-urlencoded</code> で送ります（URLのクエリは表示用）。</div>
 
   <div class="rooms">
     <!-- Room 1 -->
     <div class="card">
       <div class="title">Room 1</div>
       <div class="btns">
-        <a href="#" class="button" data-action="join"  data-id="1" data-seat="black">Join (black)</a>
-        <a href="#" class="button" data-action="join"  data-id="1" data-seat="white">Join (white)</a>
-        <a href="#" class="button" data-action="join"  data-id="1" data-seat="observer">Join (observer)</a>
-        <a href="#" class="button" data-action="reset" data-id="1">Reset</a>
+        <a class="button" href="/join?id=1&seat=black">Join (black)</a>
+        <a class="button" href="/join?id=1&seat=white">Join (white)</a>
+        <a class="button" href="/join?id=1&seat=observer">Join (observer)</a>
+        <a class="button" href="/reset?id=1">Reset</a>
       </div>
     </div>
 
@@ -40,10 +36,10 @@
     <div class="card">
       <div class="title">Room 2</div>
       <div class="btns">
-        <a href="#" class="button" data-action="join"  data-id="2" data-seat="black">Join (black)</a>
-        <a href="#" class="button" data-action="join"  data-id="2" data-seat="white">Join (white)</a>
-        <a href="#" class="button" data-action="join"  data-id="2" data-seat="observer">Join (observer)</a>
-        <a href="#" class="button" data-action="reset" data-id="2">Reset</a>
+        <a class="button" href="/join?id=2&seat=black">Join (black)</a>
+        <a class="button" href="/join?id=2&seat=white">Join (white)</a>
+        <a class="button" href="/join?id=2&seat=observer">Join (observer)</a>
+        <a class="button" href="/reset?id=2">Reset</a>
       </div>
     </div>
 
@@ -51,10 +47,10 @@
     <div class="card">
       <div class="title">Room 3</div>
       <div class="btns">
-        <a href="#" class="button" data-action="join"  data-id="3" data-seat="black">Join (black)</a>
-        <a href="#" class="button" data-action="join"  data-id="3" data-seat="white">Join (white)</a>
-        <a href="#" class="button" data-action="join"  data-id="3" data-seat="observer">Join (observer)</a>
-        <a href="#" class="button" data-action="reset" data-id="3">Reset</a>
+        <a class="button" href="/join?id=3&seat=black">Join (black)</a>
+        <a class="button" href="/join?id=3&seat=white">Join (white)</a>
+        <a class="button" href="/join?id=3&seat=observer">Join (observer)</a>
+        <a class="button" href="/reset?id=3">Reset</a>
       </div>
     </div>
 
@@ -62,10 +58,10 @@
     <div class="card">
       <div class="title">Room 4</div>
       <div class="btns">
-        <a href="#" class="button" data-action="join"  data-id="4" data-seat="black">Join (black)</a>
-        <a href="#" class="button" data-action="join"  data-id="4" data-seat="white">Join (white)</a>
-        <a href="#" class="button" data-action="join"  data-id="4" data-seat="observer">Join (observer)</a>
-        <a href="#" class="button" data-action="reset" data-id="4">Reset</a>
+        <a class="button" href="/join?id=4&seat=black">Join (black)</a>
+        <a class="button" href="/join?id=4&seat=white">Join (white)</a>
+        <a class="button" href="/join?id=4&seat=observer">Join (observer)</a>
+        <a class="button" href="/reset?id=4">Reset</a>
       </div>
     </div>
   </div>
@@ -75,17 +71,15 @@
     room: <code id="out-room">-</code> /
     role: <code id="out-role">-</code> /
     step: <code id="out-step">-</code> /
-    token: <code id="out-token">-</code> /
-    status: <code id="out-status">-</code>
+    token: <code id="out-token">-</code>
   </div>
 
   <script>
-    async function postForm(path, payload) {
-      const body = new URLSearchParams(payload);
-      const res  = await fetch(path, {
+    async function postForm(pathname, searchParams) {
+      const res = await fetch(pathname, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body
+        body: searchParams.toString()  // id=..&seat=.. / id=..
       });
       let json = null;
       try { json = await res.json(); } catch (_) {}
@@ -97,31 +91,16 @@
       if (!a) return;
       e.preventDefault();
 
-      const id    = a.dataset.id;
-      const action= a.dataset.action;
+      // a.href を解析して、パスとクエリを POST に転用
+      const url = new URL(a.getAttribute("href"), window.location.origin);
+      const { ok, json } = await postForm(url.pathname, url.searchParams);
 
-      if (action === "join") {
-        const seat = a.dataset.seat || "observer";
-        const { ok, json } = await postForm("/join", { id, seat });
-        if (!ok) { alert("join NG"); return; }
-
-        // 期待: { token, role, step } が返る
-        document.getElementById("out-room").textContent  = id;
-        document.getElementById("out-role").textContent  = json?.role ?? "-";
-        document.getElementById("out-step").textContent  = json?.step ?? "-";
-        document.getElementById("out-token").textContent = json?.token ?? "-";
-        // status は SSE 側の情報だが、join 直後の room.status を HTTPで返していない場合はダッシュのまま
-        document.getElementById("out-status").textContent = "-";
-      }
-
-      if (action === "reset") {
-        await postForm("/reset", { id });
-        // 表示は必要に応じてリセット
-        // document.getElementById("out-room").textContent  = id;
-        // document.getElementById("out-role").textContent  = "-";
-        // document.getElementById("out-step").textContent  = "-";
-        // document.getElementById("out-token").textContent = "-";
-        // document.getElementById("out-status").textContent= "-";
+      // join のときだけ token/role/step が返る想定
+      if (url.pathname === "/join" && ok && json) {
+        document.getElementById("out-room").textContent  = url.searchParams.get("id") ?? "-";
+        document.getElementById("out-role").textContent  = json.role ?? "-";
+        document.getElementById("out-step").textContent  = json.step ?? "-";
+        document.getElementById("out-token").textContent = json.token ?? "-";
       }
     });
   </script>
