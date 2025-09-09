@@ -4,6 +4,8 @@ import type { Room, Seat } from "../schema/types";
 export const leaveMethod: ActionHandler = async (params, ctx) => {
   const token = params?.token != null ? String(params.token) : "";
 
+console.log(JSON.stringify({LEAVE_DEBUG:true,hasRoom:!!ctx.room,ctor:(ctx.room as any)?.constructor?.name,leaveFn:typeof (ctx.room as any)?.leaveByToken}));
+
   const changed = ctx.room.leaveByToken(token);
 
   if (changed) {
