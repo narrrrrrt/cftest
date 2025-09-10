@@ -3,12 +3,10 @@ import type { Seat } from "../schema/types";
 import { leaveMethod } from "../usecases/leaveMethod";
 
 export const leaveAction: ActionHandler = async (params, ctx) => {
+
+console.log(JSON.stringify({LEAVE_DEBUG:3,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
   const token = params?.token != null ? String(params.token) : "";
-
-export const leaveAction: ActionHandler = async (params, ctx) => {
-
-//console.log(JSON.stringify({LEAVE_DEBUG:3,hasRoom:!!ctx.room,ctor:String((ctx.room as any)?.constructor?.name),leaveFn:typeof (ctx.room as any)?.leaveByToken}));
-
+  
   if (!token) {
     return {
       response: { status: 400, body: { error: "missing token" } }
